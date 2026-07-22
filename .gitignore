@@ -1,0 +1,14 @@
+# Arquivos de Firmware e Binários Pesados
+*.uf2
+
+# Cache do Python e arquivos temporários
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Configurações locais do VS Code (Opcional, mas recomendado)
+.vscode/
+
+# Arquivos inúteis do Sistema Operacional (Windows/Mac)
+Thumbs.db
+.DS_Store
