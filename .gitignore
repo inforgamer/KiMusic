@@ -8,7 +8,7 @@ __pycache__/
 
 # Configurações locais do VS Code (Opcional, mas recomendado)
 .vscode/
-
+.bat
 # Arquivos inúteis do Sistema Operacional (Windows/Mac)
 Thumbs.db
 .DS_Store

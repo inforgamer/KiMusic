@@ -1,4 +1,4 @@
 [wokwi]
 version = 1
-elf = "main.py"
 firmware = "RPI_PICO-20260406-v1.23.0.uf2"
+rfc2217ServerPort = 4000
