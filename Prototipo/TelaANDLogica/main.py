@@ -19,11 +19,13 @@ is_pressed_preview = False
 
 #Volume
 botao_volume = Pin(6,Pin.IN,Pin.PULL_UP)
-is_volume_mode = False
+volume_mode = False
 is_pressed_volume = False
 
-
-
+#Posicao
+botao_posicao = Pin(7, Pin.IN,Pin.PULL_UP)
+position_mode = False
+is_pressed_position = False
 
 #config de exibição
 spi =SPI(0, baudrate=40000000, sck=Pin(18), mosi=Pin(19))
@@ -47,63 +49,76 @@ def preview_music():
   print('Musica anterior')
 
 #Volume
-def set_volume():
-  print('Volume mode')
+def set_volume(volume_mode):
+  if volume_mode:
+    print('Modo Volume')
+  else:
+    print('Modo Normal')
 
+#Position
+def set_position(position_mode):
+   if position_mode:
+      print("Modo de Posicao")
+   else:
+      print("Modo normal")
+  
 while True:
-  #Play/Pause
-  if botao_central.value() == 0 and is_pressed_play == False:
-     is_pressed_play = True
-     is_play = not is_play
-     play(is_play)
-     time.sleep(0.1)
-  if botao_central.value() == 1 and is_pressed_play == True:
-    is_pressed_play = False
+    #Play/Pause
+    if botao_central.value() == 0 and is_pressed_play == False:
+      is_pressed_play = True
+      is_play = not is_play
+      play(is_play)
+      time.sleep(0.1)
+    if botao_central.value() == 1 and is_pressed_play == True:
+      is_pressed_play = False
+      time.sleep(0.1)
+
 
 
 
   #Next
-  if botao_next.value() == 0 and is_pressed_next == False:
-      is_pressed_next = True
-      next_music()
-      time.sleep(0.1)
-  if botao_next.value() == 1 and is_pressed_next == True:
-      is_pressed_next = False
-      time.sleep(0.1)
+    if botao_next.value() == 0 and is_pressed_next == False:
+        is_pressed_next = True
+        next_music()
+        time.sleep(0.1)
+    if botao_next.value() == 1 and is_pressed_next == True:
+        is_pressed_next = False
+        time.sleep(0.1)
 
 
 
   #Preview
-  if botao_preview.value() == 0 and is_pressed_preview == False:
-    is_pressed_preview = True
-    preview_music()
-    time.sleep(0.1)
-  if botao_preview.value() == 1 and is_pressed_preview == True:
-    is_pressed_preview = False
-    time.sleep(0.1)
+    if botao_preview.value() == 0 and is_pressed_preview == False:
+      is_pressed_preview = True
+      preview_music()
+      time.sleep(0.1)
+    if botao_preview.value() == 1 and is_pressed_preview == True:
+      is_pressed_preview = False
+      time.sleep(0.1)
 
 
 
   #Volume
-  if botao_volume.value() == 0 and not is_pressed_volume:
-    is_pressed_volume = True
-    is_volume_mode = not is_volume_mode
-
-    if is_volume_mode:
-      set_volume()
-    else:
-      print("Saiu")
-
-      time.sleep(0.1)
-
-  if botao_volume.value() == 1 and is_pressed_volume:
-    is_pressed_volume = False
+    if botao_volume.value() == 0 and is_pressed_volume == False:
+        is_pressed_volume = True
+        volume_mode = not volume_mode
+        set_volume(volume_mode)
+        time.sleep(0.1)
+    if botao_volume.value() == 1 and is_pressed_volume == True:
+        is_pressed_volume = False
+        time.sleep(0.1)
 
 
 
-
-
-  
+  #Posicao
+    if botao_posicao.value() == 0 and is_pressed_position == False:
+        is_pressed_position = True
+        position_mode = not position_mode
+        set_position(position_mode)
+        time.sleep(0.1)
+    if botao_posicao.value() == 1 and is_pressed_position == True:
+        is_pressed_position = False
+        time.sleep(0.1)
 
 
 
