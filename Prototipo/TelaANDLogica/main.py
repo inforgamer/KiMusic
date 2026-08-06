@@ -55,7 +55,7 @@ class Player:
 
     def control(self):
         if self.center_button.check_click():
-            pass
+            print("testes")
         elif self.position_button.check_click():
            pass
         elif self.preview_button.check_click():
@@ -66,6 +66,7 @@ class Player:
            pass
 
 
+Player = Player()
 
 #config de exibição
 spi =SPI(0, baudrate=40000000, sck=Pin(18), mosi=Pin(19))
@@ -75,7 +76,7 @@ width=320, height= 240, rotation= 270)
   
 while True:
     
- pass
+ Player.control()
 
 
 
