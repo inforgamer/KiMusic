@@ -16,12 +16,13 @@ class Encoder:
       self.val_old = self.rotate.value()
       self.val_now = val_now
 
-  def rotation(self) -> None:
+  def rotation(self):
       val_new = self.rotate.value()
       if self.val_old != val_new:
         self.val_old = val_new
         print(val_new)
         time.sleep(0.05)
+
 
 class Button:
     def __init__(self, pin_number):
@@ -58,7 +59,7 @@ class Player:
         self.idle = True
 
     def control(self):
-
+        self.encoder.rotation()
         
         if self.center_button.check_click():
             self.is_play = not self.is_play
@@ -70,7 +71,7 @@ class Player:
         elif self.position_button.check_click() and self.is_volume_mode == False:
             self.is_position_mode = not self.is_position_mode
             if self.is_position_mode == True:
-                print("modo posição")
+                print("modo posicao")
                 self.idle = False
             if self.is_position_mode == False:
                  print("mode normal")
@@ -87,15 +88,12 @@ class Player:
 
         elif self.preview_button.check_click() and self.idle == True:
             self.idle = not self.idle
-            if self.idle == False:
-                print("Musica anterior")
-                self.idle = not self.idle
+            print("Musica anterior")
+            self.idle = not self.idle
         elif self.next_button.check_click() and self.idle == True:
             self.idle = not self.idle
-            if self.idle == False:
-                print("proxima musica")
-                self.idle = not self.idle
-        
+            print("proxima musica")
+            self.idle = not self.idle
 
 
 my_player = Player()
@@ -108,9 +106,7 @@ width=320, height= 240, rotation= 270)
 while True:
     
  my_player.control()
- time.sleep(0.01)
-
-
+ 
 
 
 
