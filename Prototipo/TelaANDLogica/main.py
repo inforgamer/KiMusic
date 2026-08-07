@@ -55,8 +55,11 @@ class Player:
         self.is_play = False
         self.is_volume_mode  = False
         self.is_position_mode = False
+        self.idle = True
 
     def control(self):
+
+        
         if self.center_button.check_click():
             self.is_play = not self.is_play
             if self.is_play == True: 
@@ -64,23 +67,34 @@ class Player:
             if self.is_play == False:
                print("pause")
 
-        elif self.position_button.check_click():
+        elif self.position_button.check_click() and self.is_volume_mode == False:
             self.is_position_mode = not self.is_position_mode
             if self.is_position_mode == True:
                 print("modo posição")
+                self.idle = False
             if self.is_position_mode == False:
-               print("mode normal")
-        elif self.volume_button.check_click():
+                 print("mode normal")
+                 self.idle = True
+
+        elif self.volume_button.check_click() and self.is_position_mode == False:
             self.is_volume_mode = not self.is_volume_mode
             if self.is_volume_mode == True:
                 print("modo volume")
+                self.idle = False
             if self.is_volume_mode == False:
                print("modo normal")
+               self.idle = True
 
-        elif self.preview_button.check_click():
-            print("Musica anterior")
-        elif self.next_button.check_click():
-            print("proxima musica")
+        elif self.preview_button.check_click() and self.idle == True:
+            self.idle = not self.idle
+            if self.idle == False:
+                print("Musica anterior")
+                self.idle = not self.idle
+        elif self.next_button.check_click() and self.idle == True:
+            self.idle = not self.idle
+            if self.idle == False:
+                print("proxima musica")
+                self.idle = not self.idle
         
 
 
@@ -101,4 +115,4 @@ while True:
 
 
 
-#arrumar trava de botao para apenas um botao por vez  // clocar memororia para volume e bloquear mudança de volume sem estar no modo de volume(agora ele continuar contando mesmo sem estar e add quando entra )
+# // clocar memororia para volume e bloquear mudança de volume sem estar no modo de volume(agora ele continuar contando mesmo sem estar e add quando entra )
