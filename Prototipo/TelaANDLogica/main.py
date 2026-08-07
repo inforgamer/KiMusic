@@ -24,6 +24,8 @@ class Encoder:
         time.sleep(0.05)
 
 
+
+
 class Button:
     def __init__(self, pin_number):
       self.pin_number = pin_number
@@ -60,7 +62,8 @@ class Player:
 
     def control(self):
         self.encoder.rotation()
-        
+        print(self.encoder.rotation.value())
+
         if self.center_button.check_click():
             self.is_play = not self.is_play
             if self.is_play == True: 
