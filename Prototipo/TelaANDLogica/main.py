@@ -52,22 +52,39 @@ class Player:
         self.volume_button = Button(6)
         self.position_button = Button(7)
         self.encoder = Encoder(0,0,0)
+        self.is_play = False
+        self.is_volume_mode  = False
+        self.is_position_mode = False
 
     def control(self):
         if self.center_button.check_click():
-            print("testes")
+            self.is_play = not self.is_play
+            if self.is_play == True: 
+                print("play")
+            if self.is_play == False:
+               print("pause")
+
         elif self.position_button.check_click():
-           pass
-        elif self.preview_button.check_click():
-            pass
-        elif self.next_button.check_click():
-            pass
+            self.is_position_mode = not self.is_position_mode
+            if self.is_position_mode == True:
+                print("modo posição")
+            if self.is_position_mode == False:
+               print("mode normal")
         elif self.volume_button.check_click():
-           pass
+            self.is_volume_mode = not self.is_volume_mode
+            if self.is_volume_mode == True:
+                print("modo volume")
+            if self.is_volume_mode == False:
+               print("modo normal")
+
+        elif self.preview_button.check_click():
+            print("Musica anterior")
+        elif self.next_button.check_click():
+            print("proxima musica")
+        
 
 
-Player = Player()
-
+my_player = Player()
 #config de exibição
 spi =SPI(0, baudrate=40000000, sck=Pin(18), mosi=Pin(19))
 display = Display(spi, dc=Pin(14), cs=Pin(17), rst=Pin(15),
@@ -76,7 +93,7 @@ width=320, height= 240, rotation= 270)
   
 while True:
     
- Player.control()
+ my_player.control()
 
 
 
