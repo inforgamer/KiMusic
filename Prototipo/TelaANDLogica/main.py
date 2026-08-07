@@ -108,6 +108,7 @@ width=320, height= 240, rotation= 270)
 while True:
     
  my_player.control()
+ time.sleep(0.01)
 
 
 
