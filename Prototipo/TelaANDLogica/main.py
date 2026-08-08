@@ -6,23 +6,22 @@ from rotary_irq_rp2 import RotaryIRQ
 
 
 class Encoder:
-  def __init__(self, min_val, max_val, val_now):
+  def __init__(self):
       self.rotate = RotaryIRQ(pin_num_clk=2, 
-              pin_num_dt=3, 
-              min_val=min_val, 
-              max_val= max_val, 
+              pin_num_dt=3,
               reverse=False, 
-              range_mode=RotaryIRQ.RANGE_BOUNDED)
+              range_mode=RotaryIRQ.RANGE_UNBOUNDED)
       self.val_old = self.rotate.value()
-      self.val_now = val_now
 
   def rotation(self):
       val_new = self.rotate.value()
       if self.val_old != val_new:
+        dif = val_new - self.val_old
         self.val_old = val_new
         print(val_new)
         time.sleep(0.05)
-
+        return dif
+      return 0
 
 
 
@@ -54,15 +53,19 @@ class Player:
         self.next_button = Button(9)
         self.volume_button = Button(6)
         self.position_button = Button(7)
-        self.encoder = Encoder(0,0,0)
+        self.encoder = Encoder()
         self.is_play = False
         self.is_volume_mode  = False
         self.is_position_mode = False
         self.idle = True
+        self.volume = 50
+
+    
 
     def control(self):
-        self.encoder.rotation()
-        print(self.encoder.rotation.value())
+        self.dif = self.encoder.rotation()
+        if self.is_volume_mode and self.dif != 0:
+            self.set_volume()
 
         if self.center_button.check_click():
             self.is_play = not self.is_play
@@ -98,6 +101,15 @@ class Player:
             print("proxima musica")
             self.idle = not self.idle
 
+    def set_volume(self):
+       self.volume = self.volume + self.dif
+       if self.volume >= 100:
+            self.volume = 100
+       elif self.volume <= 0:
+            self.volume = 0
+       print("volume = ", self.volume )  
+       
+       
 
 my_player = Player()
 #config de exibição
@@ -109,6 +121,7 @@ width=320, height= 240, rotation= 270)
 while True:
     
  my_player.control()
+ time.sleep(0.01)
  
 
 
