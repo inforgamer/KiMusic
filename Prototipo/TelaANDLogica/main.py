@@ -1,7 +1,6 @@
 import time
-from time import sleep
-from ili9341 import Display, color565
-from machine import Pin, SPI
+from screen import Screen
+from machine import Pin
 from rotary_irq_rp2 import RotaryIRQ  
 
 
@@ -108,24 +107,21 @@ class Player:
        elif self.volume <= 0:
             self.volume = 0
        print("volume = ", self.volume )  
-       
-       
-
+    def set_position(self):
+      # self.position = self.position.dif
+       #if self.position >= duracao_total:
+        #self.position = duracao_total   
+       #elif self.position <= 0;
+            #self.position = 0
+            #print(self.position)
+       #print(self.position)
+        pass   
+my_screen = Screen()
 my_player = Player()
-#config de exibição
-spi =SPI(0, baudrate=40000000, sck=Pin(18), mosi=Pin(19))
-display = Display(spi, dc=Pin(14), cs=Pin(17), rst=Pin(15),
-width=320, height= 240, rotation= 270)
 
-  
+my_screen.text()
+
 while True:
     
  my_player.control()
  time.sleep(0.01)
- 
-
-
-
-
-
-# // clocar memororia para volume e bloquear mudança de volume sem estar no modo de volume(agora ele continuar contando mesmo sem estar e add quando entra )
