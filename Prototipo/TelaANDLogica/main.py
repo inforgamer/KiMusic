@@ -123,4 +123,3 @@ while True:
     
  my_player.control()
  time.sleep(0.01)
- 
