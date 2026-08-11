@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Solution>
+	<Configurations>
+		<BuildType Name="Debug"/>
+		<BuildType Name="Release"/>
+		<BuildType Name="MinSizeRel"/>
+		<BuildType Name="RelWithDebInfo"/>
+		<Platform Name="x64"/>
+	</Configurations>
+	<Project Path="ALL_BUILD.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="f607f68c-2915-3450-89cb-4bd5ef7b204e" DefaultStartup="true">
+		<BuildDependency Project="../ZERO_CHECK.vcxproj"/>
+		<BuildDependency Project="src/rp2040/boot_stage2/bs2_default.vcxproj"/>
+		<BuildDependency Project="src/rp2040/boot_stage2/bs2_default_library.vcxproj"/>
+		<Build Solution="Debug|*" Project="false"/>
+		<Build Solution="Release|*" Project="false"/>
+		<Build Solution="MinSizeRel|*" Project="false"/>
+		<Build Solution="RelWithDebInfo|*" Project="false"/>
+	</Project>
+	<Project Path="../ZERO_CHECK.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="15734d54-c72d-36be-8386-37e63efe0425"/>
+	<Project Path="src/rp2040/boot_stage2/bs2_default.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="7dc33c6d-c6ff-3de6-9785-d84c5d1aa935">
+		<BuildDependency Project="../ZERO_CHECK.vcxproj"/>
+	</Project>
+	<Project Path="src/rp2040/boot_stage2/bs2_default_bin.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="b836bb12-df24-3ec2-99b3-391934f1df2c">
+		<BuildDependency Project="../ZERO_CHECK.vcxproj"/>
+		<BuildDependency Project="src/rp2040/boot_stage2/bs2_default.vcxproj"/>
+		<Build Solution="Debug|*" Project="false"/>
+		<Build Solution="Release|*" Project="false"/>
+		<Build Solution="MinSizeRel|*" Project="false"/>
+		<Build Solution="RelWithDebInfo|*" Project="false"/>
+	</Project>
+	<Project Path="src/rp2040/boot_stage2/bs2_default_library.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="398e41e7-a160-3a7b-a075-dceaa5cd5e16">
+		<BuildDependency Project="../ZERO_CHECK.vcxproj"/>
+		<BuildDependency Project="src/rp2040/boot_stage2/bs2_default.vcxproj"/>
+	</Project>
+	<Project Path="src/rp2_common/pico_cyw43_driver/cyw43_driver_picow_cyw43_bus_pio_spi_pio_h.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="867bf56a-32d1-363f-8e9d-d690f0901c2d">
+		<BuildDependency Project="../ZERO_CHECK.vcxproj"/>
+		<Build Solution="Debug|*" Project="false"/>
+		<Build Solution="Release|*" Project="false"/>
+		<Build Solution="MinSizeRel|*" Project="false"/>
+		<Build Solution="RelWithDebInfo|*" Project="false"/>
+	</Project>
+	<Project Path="src/rp2_common/pico_status_led/pico_status_led_ws2812_pio_h.vcxproj" Type="8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942" Id="468d82d8-03fd-388c-9eb9-50abce0ad445">
+		<BuildDependency Project="../ZERO_CHECK.vcxproj"/>
+		<Build Solution="Debug|*" Project="false"/>
+		<Build Solution="Release|*" Project="false"/>
+		<Build Solution="MinSizeRel|*" Project="false"/>
+		<Build Solution="RelWithDebInfo|*" Project="false"/>
+	</Project>
+</Solution>

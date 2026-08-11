@@ -5,9 +5,50 @@
 #include "hardware/dma.h"
 #include "hardware/pio.h"
 #include "hardware/interp.h"
+#include "..\libs\quadrature.pio.h"
+#include "hardware/pio.h"
 using namespace std;
 
-//class Encoder{}
+class Encoder
+{
+    private:
+     uint pinClk;
+     uint pinDt;
+     PIO pio;
+     uint sm;
+     int valOld;
+
+
+    public:
+    Encoder()
+    {
+        this-> valOld = 0;
+        this->pinClk = 2;
+        this->pinDt = 3;
+        this->pio = pio0;
+        
+        uint offset = pio_add_program(this->pio, &quadratureA_program);
+        this->sm = pio_claim_unused_sm(this->pio, true);
+        quadratureA_program_init(this->pio,this->sm, offset, this->pinClk, this->pinDt);
+    };
+
+    int readRotate()
+    {
+        pio_sm_exec_wait_blocking(pio,sm,pio_encode_in(pio_x, 32));
+        uint x = pio_sm_get_blocking(pio,sm);
+        int valNew = x;
+        if (valOld != valNew)
+        {
+            int dif = valNew - valOld;
+            valOld = valNew;
+            printf("%d\n", valNew);
+            sleep_ms(50);
+            return dif;
+        }
+        return 0;
+    };
+    
+};
 
 class Button
 {
@@ -59,15 +100,19 @@ class Player
     bool positionMode;
     bool idle;
     uint volume;
+    Encoder encoder;
+    int dif;
 
     public:
         Player():
+            encoder(),
             centerButton(5),
             previewButton(8),
             nextButton(9),
             volumeButton(6),
             positionButton(7)
             {
+                this-> dif = 0;
                 isPlay = false;
                 volumeMode = false;
                 positionMode = false;
@@ -76,9 +121,15 @@ class Player
             };
     void control()
     {
-    //self.dif = self.encoder.rotation()
-    //if self.is_volume_mode and self.dif != 0:
-    //self.set_volume()
+    this->dif = this->encoder.readRotate();
+    if(volumeMode == true && dif != 0 )
+    {
+        setVolume(this->dif);
+    }
+    if(positionMode == true && dif != 0)
+    {
+        setPosition(this->dif);
+    }
     if(centerButton.checkClick())
         {
             isPlay = !isPlay;
@@ -88,65 +139,66 @@ class Player
             }
             else
             {
-                 printf("Puase!\n");
+                 printf("Pause!\n");
             }
         }
-            else if (positionButton.checkClick() && volumeMode == false)
+    else if (positionButton.checkClick() && volumeMode == false)
+        {
+            positionMode = !positionMode;
+        if (positionMode == true)
             {
-                positionMode = !positionMode;
-            if (positionMode == true)
-                {
-                     printf("Modo Posicao!\n");
-                    idle = false;
-                }
-            else
-                {
-                    printf("Modo Normal!\n");
-                    idle = true;
-                }
+                printf("Modo Posicao!\n");
+                idle = false;
             }
-            else if(volumeButton.checkClick() && positionMode == false)
+        else
             {
-                volumeMode = !volumeMode;
-                if(volumeMode == true)
-                {
-                    printf("Modo Volume!\n");
-                    idle = false;
-                }
-                else
-                {
-                    printf("Modo Normal!\n");
-                    idle = true;
-                }
+                printf("Modo Normal!\n");
+                idle = true;
             }
-            if(previewButton.checkClick() && idle == true)
-            {
-                idle = !idle;
-                printf("Musica Anterior!\n");
-                idle = !idle;
-            }
-            if(nextButton.checkClick() && idle == true)
-            {
-                idle = !idle;
-                printf("Proxima misica!\n");
-                idle = !idle;
-            }
+        }
+    else if(volumeButton.checkClick() && positionMode == false)
+    {
+        volumeMode = !volumeMode;
+        if(volumeMode == true)
+        {
+            printf("Modo Volume!\n");
+            idle = false;
+        }
+        else
+        {
+            printf("Modo Normal!\n");
+            idle = true;
+        }
+    }
+    else if(previewButton.checkClick() && idle == true)
+        {
+            idle = !idle;
+            printf("Musica Anterior!\n");
+            idle = !idle;
+        }
+    else if(nextButton.checkClick() && idle == true)
+    {
+        idle = !idle;
+        printf("Proxima musica!\n");
+        idle = !idle;
+    }
     };
-  void setVolume()
+  void setVolume(int delta)
     {
-        volume = volume;
-        if(volume >= 100)
+        this->volume += delta;
+        if(this->volume >= 100)
         {
-            volume = 100;
+            this->volume = 100;
         }
-        else if (volume <= 0)
+        else if (this->volume <= 0)
         {
-             volume = 0;
+             this->volume = 0;
         }
+        printf("Volume atual: %d\n", this->volume);
     };  
-    void setPosition()
+    void setPosition(int position)
     {
-    
+     // avançar tempo da musica refernte a rotação
     };      
 };
 
