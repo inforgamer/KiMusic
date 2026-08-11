@@ -1,4 +1,0 @@
-# CMake generation dependency list for this directory.
-C:/Program Files/Microsoft Visual Studio/18/Insiders/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.3/Modules/CheckCSourceCompiles.cmake
-C:/Program Files/Microsoft Visual Studio/18/Insiders/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.3/Modules/Internal/CheckSourceCompiles.cmake
-C:/Users/olive/.pico-sdk/sdk/2.3.0/src/rp2_common/pico_thread_local/CMakeLists.txt

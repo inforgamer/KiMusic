@@ -1,7 +1,0 @@
-# CMake generation dependency list for this directory.
-C:/Users/olive/.pico-sdk/sdk/2.3.0/src/CMakeLists.txt
-C:/Users/olive/.pico-sdk/sdk/2.3.0/src/cmake/on_device.cmake
-C:/Users/olive/.pico-sdk/sdk/2.3.0/src/cmake/rp2_common.cmake
-C:/Users/olive/.pico-sdk/sdk/2.3.0/src/rp2040.cmake
-C:/Users/olive/.pico-sdk/sdk/2.3.0/src/rp2040/hardware_regs/include/hardware/regs/dreq.h
-C:/Users/olive/.pico-sdk/sdk/2.3.0/src/rp2040/hardware_regs/include/hardware/regs/intctrl.h
