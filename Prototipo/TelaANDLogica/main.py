@@ -108,14 +108,12 @@ class Player:
             self.volume = 0
        print("volume = ", self.volume )  
     def set_position(self):
-      # self.position = self.position.dif
-       #if self.position >= duracao_total:
-        #self.position = duracao_total   
-       #elif self.position <= 0;
-            #self.position = 0
-            #print(self.position)
-       #print(self.position)
-        pass   
+      self.position = self.position + self.dif
+      if self.position >= duracao_total:
+        self.position = duracao_total   
+      elif self.position <= 0:
+              self.position = 0
+              print(self.position)         
 my_screen = Screen()
 my_player = Player()
 
@@ -125,3 +123,4 @@ while True:
     
  my_player.control()
  time.sleep(0.01)
+ 
