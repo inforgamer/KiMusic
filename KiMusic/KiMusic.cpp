@@ -9,7 +9,7 @@
 
 using namespace std;
 
-class Encoder
+/*class Encoder
 {
     private:
      uint pinClk;
@@ -55,7 +55,7 @@ class Encoder
         
         return 0;
     };
-};
+};*/
 
 class Button
 {
@@ -107,12 +107,12 @@ class Player
     bool positionMode;
     bool idle;
     int volume; 
-    Encoder encoder;
+   // Encoder encoder;
     int dif;
 
     public:
         Player():
-            encoder(),
+          //  encoder(),
             centerButton(5),
             previewButton(8),
             nextButton(9),
@@ -129,7 +129,7 @@ class Player
             
     void control()
     {
-        this->dif = this->encoder.readRotate();
+       // this->dif = this->encoder.readRotate();
         
         if(volumeMode == true && dif != 0 )
         {
