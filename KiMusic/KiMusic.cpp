@@ -6,6 +6,7 @@
 #include "hardware/pio.h"
 #include "hardware/interp.h"
 #include "../libs/quadrature.pio.h"
+
 using namespace std;
 
 class Encoder
