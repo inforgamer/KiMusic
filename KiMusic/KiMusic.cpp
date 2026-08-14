@@ -5,57 +5,40 @@
 #include "hardware/dma.h"
 #include "hardware/pio.h"
 #include "hardware/interp.h"
-#include "../libs/quadrature.pio.h"
 
+#include "../libs/QuadratureEncoder.hpp"
 using namespace std;
 
-/*class Encoder
+class Encoder
 {
     private:
-     uint pinClk;
-     uint pinDt;
-     PIO pio;
-     uint sm;
-     int valOld;
+    QuadratureEncoder* encoder_matteo;
+    int32_t ultima_posicao;
+    float tempo_amostragem = 0.01f;
 
+public:
+    Encoder() {
+        encoder_matteo = new QuadratureEncoder(2, 24.0f);
+        ultima_posicao = 0;
+    }
 
-    public:
-    Encoder()
-    {
-        this-> valOld = 0;
-        this->pinClk = 2;
-        this->pinDt = 3;
-        this->pio = pio0;
+    int readRotate() {
+        encoder_matteo->update(tempo_amostragem);
         
-        uint offset = pio_add_program(this->pio, &quadratureA_program);
-        this->sm = pio_claim_unused_sm(this->pio, true);
-        quadratureA_program_init(this->pio,this->sm, offset, this->pinClk, this->pinDt);
-        pio_sm_set_enabled(this->pio, this->sm, true);
-    };
+        int32_t posicao_atual = encoder_matteo->get_count();
+        int direcao = 0;
 
-   int readRotate()
-    {
-        pio_sm_clear_fifos(this->pio, this->sm);
-        
-        pio_sm_exec(this->pio, this->sm, pio_encode_in(pio_x, 32));
-        pio_sm_exec(this->pio, this->sm, pio_encode_push(false, false));
-        
-        uint x = pio_sm_get_blocking(this->pio, this->sm); 
-        
-        int valNew = (int)x;
-        
-        if (this->valOld != valNew)
-        {
-            int dif = valNew - this->valOld;
-            this->valOld = valNew;
-            printf("Giro do Encoder: %d (Diferenca: %d)\n", valNew, dif);
-            
-            return dif;
+        if (posicao_atual > ultima_posicao) {
+            direcao = 1;  
+        } else if (posicao_atual < ultima_posicao) {
+            direcao = -1; 
         }
+
+        ultima_posicao = posicao_atual;
         
-        return 0;
-    };
-};*/
+        return direcao; 
+    }
+};
 
 class Button
 {
@@ -107,12 +90,12 @@ class Player
     bool positionMode;
     bool idle;
     int volume; 
-   // Encoder encoder;
+    Encoder encoder;
     int dif;
 
     public:
         Player():
-          //  encoder(),
+            encoder(),
             centerButton(5),
             previewButton(8),
             nextButton(9),
@@ -129,7 +112,7 @@ class Player
             
     void control()
     {
-       // this->dif = this->encoder.readRotate();
+        this->dif = this->encoder.readRotate();
         
         if(volumeMode == true && dif != 0 )
         {
