@@ -1,44 +1,202 @@
-# KiMusic - Projeto do MP3 Player Customizado
+# 🎵 KiMusic
 
-> ⚠️ **Status: Fase de Planejamento (Menos de 1% concluído)**
-> O projeto começou agora. O objetivo deste repositório é centralizar a documentação, os estudos iniciais de código e os esboços físicos antes da montagem oficial. 
+> Um MP3 Player customizado desenvolvido do zero utilizando Raspberry Pi Pico.
 
-O **KiMusic** é um projeto pessoal de construção de um MP3 Player do zero utilizando o Raspberry Pi Pico. Para gerenciar a complexidade, o desenvolvimento do hardware e do software foi dividido em um plano de 5 áreas fundamentais. 
+O **KiMusic** é um projeto pessoal focado na construção de um MP3 Player portátil do zero, combinando **programação embarcada, eletrônica, interface, áudio e design físico**.
 
-A documentação detalhada, contendo todas as especificações e regras do projeto, pode ser encontrada no arquivo oficial **KiMusic.pdf** (disponível na pasta de Documentação).
-
----
-
-## 🗺️ O Plano de Ação (As 5 Áreas do Projeto)
-
-O desenvolvimento vai atacar as seguintes frentes, passo a passo:
-
-### 1. Design Industrial
-Onde a estética encontra a ergonomia. Esta área cuida do visual do aparelho, onde os botões vão ficar e como será a "pegada" física do MP3.
-*   **Feito:** Primeiro esboço de papel/conceito inicial (disponível na pasta de imagens).
-*   **Próximos passos:** Modelagem 3D da carcaça e suporte para impressão.
-
-### 2. Eletrônica
-O cérebro e as conexões lógicas. Envolve a comunicação entre os módulos sem que um atropele o outro.
-*   **Feito:** Mapeamento inicial dos pinos e separação dos barramentos SPI (Tela vs. Cartão SD) no simulador Wokwi.
-*   **Próximos passos:** Desenhar o esquemático final e, futuramente, rotear uma placa de circuito impresso (PCB).
-
-### 3. Programação
-A alma do projeto . Aqui entra a lógica do sistema operacional do MP3.
-*   **Feito:** Configuração do ambiente local no VS Code e estudos iniciais de leitura de pinos.
-*   **Próximos passos:** Dominar a renderização de interface no display ILI9341, criar a máquina de estados do menu e implementar a leitura de arquivos `.txt` do cartão SD.
-
-### 4. Som
-O coração de um MP3 Player. O processamento e a saída das músicas.
-*   **Feito:** Planejamento teórico.
-*   **Próximos passos:** Estudar a decodificação de áudio pelo Raspberry Pi Pico, integrar um DAC (Conversor Digital-Analógico) e planejar a saída (Jack P2 para fones de ouvido).
-
-### 5. Elétrica
-A energia que mantém tudo vivo.
-*   **Feito:** Planejamento teórico.
-*   **Próximos passos:** Dimensionar o consumo de energia da tela e do Pico, escolher o circuito de carga e definir a capacidade da bateria de lítio.
+O projeto começou como um experimento utilizando **MicroPython** e atualmente está sendo desenvolvido em **C++**, buscando maior controle sobre o hardware e uma compreensão mais aprofundada de sistemas embarcados.
 
 ---
 
-## 🔬 Onde estamos agora?
-Atualmente focando nos estudos base de **Programação** e **Eletrônica** através de simulação no VS Code. O objetivo de curto prazo é fazer a tela ligar e o menu principal ser navegado de forma fluida usando um encoder rotativo físico/virtual, antes de comprar ou soldar qualquer componente definitivo.
+## 🚧 Status do Projeto
+
+**Etapa atual: Desenvolvimento inicial**
+
+Neste momento, o projeto está focado na construção das bases do sistema:
+
+- Programação embarcada
+- Comunicação entre componentes
+- Interface gráfica
+- Controle por encoder
+- Arquitetura de áudio
+- Gerenciamento de energia
+
+O hardware está sendo desenvolvido gradualmente, utilizando simulações e protótipos antes da montagem física definitiva.
+
+---
+
+## 🧩 Estrutura do Projeto
+
+O desenvolvimento do KiMusic foi dividido em cinco áreas principais.
+
+### 🎨 1. Design Industrial
+
+Responsável pelo formato físico do aparelho, posicionamento dos componentes e experiência de utilização.
+
+**Concluído**
+- Primeiro esboço físico
+- Conceito inicial do dispositivo
+
+**Próximos passos**
+- Modelagem 3D da carcaça
+- Definição do posicionamento dos componentes
+- Desenvolvimento de uma estrutura para impressão 3D
+
+---
+
+### ⚡ 2. Eletrônica
+
+Responsável pela comunicação entre os componentes e pelo funcionamento eletrônico do dispositivo.
+
+**Concluído**
+- Mapeamento inicial dos GPIOs
+- Planejamento dos barramentos SPI
+- Simulação inicial no Wokwi
+- Separação da comunicação entre display e cartão SD
+
+**Próximos passos**
+- Esquemático definitivo
+- Protótipo físico
+- Projeto de PCB
+
+---
+
+### 💻 3. Programação Embarcada
+
+Responsável pela lógica e pelo funcionamento do MP3 Player.
+
+**Concluído**
+- Configuração do ambiente de desenvolvimento
+- Estudos iniciais de GPIO
+- Primeiro protótipo desenvolvido em MicroPython
+- Início da migração para C++
+
+**Próximos passos**
+- Interface do display ILI9341
+- Sistema de menus
+- Máquina de estados
+- Controle pelo Rotary Encoder
+- Leitura do cartão SD
+- Sistema de reprodução de músicas
+
+---
+
+### 🎧 4. Áudio
+
+Responsável pelo processamento e reprodução das músicas.
+
+**Concluído**
+- Pesquisa e planejamento inicial da arquitetura de áudio
+
+**Próximos passos**
+- Estudo da decodificação de áudio
+- Integração de um DAC
+- Desenvolvimento da saída para fones de ouvido
+- Implementação do sistema de reprodução
+
+---
+
+### 🔋 5. Energia
+
+Responsável pelo sistema de alimentação do dispositivo.
+
+**Concluído**
+- Planejamento inicial
+
+**Próximos passos**
+- Estimativa do consumo energético
+- Escolha da bateria
+- Circuito de carregamento
+- Sistema de gerenciamento de energia
+
+---
+
+## 🛠️ Hardware
+
+| Componente | Função |
+|---|---|
+| Raspberry Pi Pico | Microcontrolador principal |
+| ILI9341 | Display |
+| Rotary Encoder | Controle do usuário |
+| Cartão SD | Armazenamento das músicas |
+| DAC | Conversão de áudio |
+| Bateria Li-ion | Alimentação portátil |
+
+> Alguns componentes ainda estão em fase de pesquisa e podem ser alterados durante o desenvolvimento.
+
+---
+
+## 💻 Tecnologias
+
+### Programação
+
+- **C++** — desenvolvimento atual
+- **MicroPython** — utilizado no protótipo inicial
+
+### Ferramentas
+
+- VS Code
+- Wokwi
+- Git / GitHub
+
+### Hardware
+
+- Raspberry Pi Pico
+- ILI9341
+- Rotary Encoder
+- Cartão SD
+- DAC
+
+---
+
+## 🗺️ Roadmap
+
+- [x] Conceito inicial do projeto
+- [x] Primeiros esboços físicos
+- [x] Mapeamento inicial dos GPIOs
+- [x] Planejamento da comunicação SPI
+- [x] Configuração da simulação no Wokwi
+- [x] Primeiro protótipo em MicroPython
+- [ ] Estrutura inicial em C++
+- [ ] Interface do ILI9341
+- [ ] Navegação pelo Rotary Encoder
+- [ ] Integração do cartão SD
+- [ ] Sistema de reprodução de áudio
+- [ ] Integração do DAC
+- [ ] Sistema de bateria
+- [ ] Primeiro protótipo físico
+- [ ] Desenvolvimento da carcaça
+- [ ] MP3 Player funcional
+
+---
+
+## 📚 Documentação
+
+A documentação técnica detalhada, incluindo especificações, planejamento e decisões do projeto, está disponível em:
+
+📄 **[KiMusic.pdf](Documentação/KiMusic.pdf)**
+
+---
+
+## 🎯 Objetivo
+
+O objetivo final é construir um **MP3 Player portátil totalmente funcional**, desenvolvido do zero, utilizando o projeto como uma forma prática de estudar:
+
+**Sistemas Embarcados → Eletrônica → C++ → Áudio → Desenvolvimento de Hardware**
+
+Mais do que construir um MP3 Player, o KiMusic é uma oportunidade para entender **como software e hardware trabalham juntos para transformar um projeto em um dispositivo funcional.**
+
+---
+
+## 📌 Foco Atual
+
+> **Fazer o display funcionar e implementar a navegação do menu principal utilizando o Rotary Encoder.**
+
+Esse é o próximo marco do projeto antes de avançar para a montagem do hardware físico.
+
+---
+
+## 👤 Autor
+
+**Hugo "Infor" Marcondes**
+[GitHub](https://github.com/inforgamer)
