@@ -24,7 +24,7 @@ O cérebro e as conexões lógicas. Envolve a comunicação entre os módulos se
 *   **Próximos passos:** Desenhar o esquemático final e, futuramente, rotear uma placa de circuito impresso (PCB).
 
 ### 3. Programação
-A alma do projeto (MicroPython). Aqui entra a lógica do sistema operacional do MP3.
+A alma do projeto . Aqui entra a lógica do sistema operacional do MP3.
 *   **Feito:** Configuração do ambiente local no VS Code e estudos iniciais de leitura de pinos.
 *   **Próximos passos:** Dominar a renderização de interface no display ILI9341, criar a máquina de estados do menu e implementar a leitura de arquivos `.txt` do cartão SD.
 
