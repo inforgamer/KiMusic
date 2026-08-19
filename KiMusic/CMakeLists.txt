@@ -37,16 +37,11 @@ pico_sdk_init()
 # ADICIONADO O ARQUIVO .cpp DA BIBLIOTECA AQUI:
 add_executable(KiMusic 
     KiMusic.cpp 
-    libs/QuadratureEncoder.cpp
 )
 
 pico_set_program_name(KiMusic "KiMusic")
 pico_set_program_version(KiMusic "0.1")
 
-# Generate PIO header (ALTERADO PARA O NOVO ARQUIVO DO ENCODER)
-pico_generate_pio_header(KiMusic ${CMAKE_CURRENT_LIST_DIR}/libs/quadrature_encoder.pio)
-# (Se você ainda for usar o blink.pio no futuro, pode descomentar a linha abaixo)
-# pico_generate_pio_header(KiMusic ${CMAKE_CURRENT_LIST_DIR}/blink.pio)
 
 # Modify the below lines to enable/disable output over UART/USB
 pico_enable_stdio_uart(KiMusic 1)

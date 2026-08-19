@@ -6,37 +6,50 @@
 #include "hardware/pio.h"
 #include "hardware/interp.h"
 
-#include "../libs/QuadratureEncoder.hpp"
 using namespace std;
 
 class Encoder
 {
     private:
-    QuadratureEncoder* encoder_matteo;
-    int32_t ultima_posicao;
-    float tempo_amostragem = 0.01f;
+    uint pinA = 2;
+    uint pinB = 3;
+    int lastState;
 
 public:
     Encoder() {
-        encoder_matteo = new QuadratureEncoder(2, 24.0f);
-        ultima_posicao = 0;
+    gpio_init(pinA);
+    gpio_set_dir(pinA, GPIO_IN);
+    gpio_pull_up(pinA);
+
+    gpio_init(pinB);
+    gpio_set_dir(pinB, GPIO_IN);
+    gpio_pull_up(pinB);
+
+    lastState = gpio_get(pinA);
     }
 
     int readRotate() {
-        encoder_matteo->update(tempo_amostragem);
-        
-        int32_t posicao_atual = encoder_matteo->get_count();
-        int direcao = 0;
-
-        if (posicao_atual > ultima_posicao) {
-            direcao = 1;  
-        } else if (posicao_atual < ultima_posicao) {
-            direcao = -1; 
+        int stateA = gpio_get(this->pinA);
+        int stateB = gpio_get(this->pinB);
+        int dir = 0;
+        if(stateA != this->lastState)
+        {
+            if (stateA == 0)
+            {
+            if(stateB != stateA)
+            {
+                dir = 1;
+            }
+           else
+            {
+                dir = -1;
+            }
         }
+            this->lastState = stateA;
 
-        ultima_posicao = posicao_atual;
-        
-        return direcao; 
+            return dir;
+        }
+        return 0;
     }
 };
 
@@ -45,15 +58,12 @@ class Button
     private:
     uint pinNumber;
     bool isPressed;
-    bool isDo;
 
     public:
         Button(uint pinNumber)
         {
             this->pinNumber = pinNumber;
             isPressed = false;
-            isDo = false;
-
             gpio_init(this->pinNumber);
             gpio_set_dir(this->pinNumber, GPIO_IN);
             gpio_pull_up(this->pinNumber);
@@ -64,7 +74,6 @@ class Button
     if(gpio_get(this->pinNumber) == 0 && isPressed == false)
     {
         isPressed = true;
-        isDo = !isDo;
         sleep_ms(100);
         return true;
     };
@@ -113,12 +122,11 @@ class Player
     void control()
     {
         this->dif = this->encoder.readRotate();
-        
-        if(volumeMode == true && dif != 0 )
+        if(volumeMode == true && this->dif != 0 )
         {
             setVolume(this->dif);
         }
-        if(positionMode == true && dif != 0)
+        if(positionMode == true && this->dif != 0)
         {
             setPosition(this->dif);
         }
@@ -201,10 +209,11 @@ int main() {
     sleep_ms(1000); 
 
     Player kiMusic;
+    sleep_ms(50);
     printf("KiMusic Iniciado...\n");
-
-    while (true) {
+    
+    while (true) 
+    {
         kiMusic.control();    
-        sleep_ms(10);
     }
 }
