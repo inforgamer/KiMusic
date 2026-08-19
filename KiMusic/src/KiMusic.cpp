@@ -215,5 +215,6 @@ int main() {
     while (true) 
     {
         kiMusic.control();    
+        sleep_ms(1);
     }
 }

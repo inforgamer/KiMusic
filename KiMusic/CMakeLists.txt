@@ -65,7 +65,7 @@ target_link_libraries(KiMusic
         hardware_dma
         hardware_pio
         hardware_interp
-        hardware_pwm
+    
         pico_stdlib
 )
 
