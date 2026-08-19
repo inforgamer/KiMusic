@@ -36,7 +36,7 @@ pico_sdk_init()
 # Add executable. Default name is the project name, version 0.1
 # ADICIONADO O ARQUIVO .cpp DA BIBLIOTECA AQUI:
 add_executable(KiMusic 
-    KiMusic.cpp 
+    src/KiMusic.cpp 
 )
 
 pico_set_program_name(KiMusic "KiMusic")
@@ -65,6 +65,7 @@ target_link_libraries(KiMusic
         hardware_dma
         hardware_pio
         hardware_interp
+        hardware_pwm
         pico_stdlib
 )
 
