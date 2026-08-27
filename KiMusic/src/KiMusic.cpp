@@ -1,4 +1,4 @@
-#include <Arduino.h> // O motor do ESP32 substitui todos aqueles includes do Pico
+#include <Arduino.h> 
 
 using namespace std;
 
