@@ -1,117 +1,105 @@
-#include <stdio.h>
-#include "pico/stdlib.h"
-#include "hardware/spi.h"
-#include "hardware/i2c.h"
-#include "hardware/dma.h"
-#include "hardware/pio.h"
-#include "hardware/interp.h"
+#include <Arduino.h> // O motor do ESP32 substitui todos aqueles includes do Pico
 
 using namespace std;
 
 class Encoder
 {
     private:
-    uint pinA = 2;
-    uint pinB = 3;
-    int lastState;
+        uint8_t pinA;
+        uint8_t pinB;
+        int lastState;
 
-public:
-    Encoder() {
-    gpio_init(pinA);
-    gpio_set_dir(pinA, GPIO_IN);
-    gpio_pull_up(pinA);
+    public:
+        Encoder(uint8_t pA, uint8_t pB) {
+            pinA = pA;
+            pinB = pB;
+            
+            pinMode(pinA, INPUT_PULLUP);
+            pinMode(pinB, INPUT_PULLUP);
 
-    gpio_init(pinB);
-    gpio_set_dir(pinB, GPIO_IN);
-    gpio_pull_up(pinB);
-
-    lastState = gpio_get(pinA);
-    }
-
-    int readRotate() {
-        int stateA = gpio_get(this->pinA);
-        int stateB = gpio_get(this->pinB);
-        int dir = 0;
-        if(stateA != this->lastState)
-        {
-            if (stateA == 0)
-            {
-            if(stateB != stateA)
-            {
-                dir = 1;
-            }
-           else
-            {
-                dir = -1;
-            }
+            lastState = digitalRead(pinA);
         }
-            this->lastState = stateA;
 
-            return dir;
+        int readRotate() {
+            int stateA = digitalRead(pinA);
+            int stateB = digitalRead(pinB);
+            int dir = 0;
+            
+            if(stateA != lastState)
+            {
+                if (stateA == LOW)
+                {
+                    if(stateB != stateA) {
+                        dir = 1;
+                    } else {
+                        dir = -1;
+                    }
+                }
+                lastState = stateA;
+                return dir;
+            }
+            return 0;
         }
-        return 0;
-    }
 };
 
 class Button
 {
     private:
-    uint pinNumber;
-    bool isPressed;
+        uint8_t pinNumber;
+        bool isPressed;
 
     public:
-        Button(uint pinNumber)
+        Button(uint8_t pinNumber)
         {
             this->pinNumber = pinNumber;
             isPressed = false;
-            gpio_init(this->pinNumber);
-            gpio_set_dir(this->pinNumber, GPIO_IN);
-            gpio_pull_up(this->pinNumber);
+            pinMode(this->pinNumber, INPUT_PULLUP);
         };
 
-   bool checkClick()
-   {
-    if(gpio_get(this->pinNumber) == 0 && isPressed == false)
-    {
-        isPressed = true;
-        sleep_ms(100);
-        return true;
-    };
-    if(gpio_get(this->pinNumber) == 1 && isPressed == true)
-    {
-        isPressed = false;
-        sleep_ms(100);
-    };
-    return false;
-   };
+        bool checkClick()
+        {
+            if(digitalRead(this->pinNumber) == LOW && isPressed == false)
+            {
+                isPressed = true;
+                delay(100);
+                return true;
+            };
+            if(digitalRead(this->pinNumber) == HIGH && isPressed == true)
+            {
+                isPressed = false;
+                delay(100);
+            };
+            return false;
+        };
 };
 
 class Player
 {
     private:
-    Button centerButton;
-    Button previewButton;
-    Button nextButton;
-    Button volumeButton;
-    Button positionButton;
-    bool isPlay;
-    bool volumeMode;
-    bool positionMode;
-    bool idle;
-    int volume; 
-    Encoder encoder;
-    int dif;
+        Button centerButton;
+        Button previewButton;
+        Button nextButton;
+        Button volumeButton;
+        Button positionButton;
+        bool isPlay;
+        bool volumeMode;
+        bool positionMode;
+        bool idle;
+        int volume; 
+        Encoder encoder;
+        int dif;
 
     public:
         Player():
-            encoder(),
-            centerButton(5),
-            previewButton(8),
-            nextButton(9),
-            volumeButton(6),
-            positionButton(7)
+        
+            encoder(6, 7),       
+            centerButton(5),     
+            previewButton(18),    
+            nextButton(8),        
+            volumeButton(16),     
+            positionButton(17)   
             {
-                this-> dif = 0;
+                this->dif = 0;
                 isPlay = false;
                 volumeMode = false;
                 positionMode = false;
@@ -133,53 +121,44 @@ class Player
         if(centerButton.checkClick())
         {
             isPlay = !isPlay;
-            if(isPlay == true)
-            {
-                 printf("Play!\n");
-            }
-            else
-            {
-                 printf("Pause!\n");
+            if(isPlay == true) {
+                 Serial.println("Play!"); 
+            } else {
+                 Serial.println("Pause!");
             }
         }
         else if (positionButton.checkClick() && volumeMode == false)
         {
             positionMode = !positionMode;
-            if (positionMode == true)
-            {
-                printf("Modo Posicao!\n");
+            if (positionMode == true) {
+                Serial.println("Modo Posicao!");
                 idle = false;
-            }
-            else
-            {
-                printf("Modo Normal!\n");
+            } else {
+                Serial.println("Modo Normal!");
                 idle = true;
             }
         }
         else if(volumeButton.checkClick() && positionMode == false)
         {
             volumeMode = !volumeMode;
-            if(volumeMode == true)
-            {
-                printf("Modo Volume!\n");
+            if(volumeMode == true) {
+                Serial.println("Modo Volume!");
                 idle = false;
-            }
-            else
-            {
-                printf("Modo Normal!\n");
+            } else {
+                Serial.println("Modo Normal!");
                 idle = true;
             }
         }
         else if(previewButton.checkClick() && idle == true)
         {
             idle = !idle;
-            printf("Musica Anterior!\n");
+            Serial.println("Musica Anterior!");
             idle = !idle;
         }
         else if(nextButton.checkClick() && idle == true)
         {
             idle = !idle;
-            printf("Proxima musica!\n");
+            Serial.println("Proxima musica!");
             idle = !idle;
         }
     };
@@ -187,15 +166,12 @@ class Player
     void setVolume(int delta)
     {
         this->volume += delta;
-        if(this->volume > 100)
-        {
+        if(this->volume > 100) {
             this->volume = 100;
-        }
-        else if (this->volume <= 0)
-        {
+        } else if (this->volume <= 0) {
              this->volume = 0;
         }
-        printf("Volume atual: %d\n", this->volume);
+        Serial.printf("Volume atual: %d\n", this->volume);
     };  
     
     void setPosition(int position)
@@ -204,17 +180,18 @@ class Player
     };      
 };
 
-int main() {
-    stdio_init_all();
-    sleep_ms(1000); 
 
-    Player kiMusic;
-    sleep_ms(50);
-    printf("KiMusic Iniciado...\n");
-    
-    while (true) 
-    {
-        kiMusic.control();    
-        sleep_ms(1);
-    }
+Player kiMusic;
+
+
+void setup() {
+    Serial.begin(115200);
+    delay(1000); 
+
+    Serial.println("KiMusic Iniciado no ESP32...");
+}
+
+void loop() {
+    kiMusic.control();    
+    delay(1);
 }
