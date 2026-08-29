@@ -3,21 +3,52 @@
   "author": "Infor",
   "editor": "wokwi",
   "parts": [
+    { "type": "board-esp32-s3-devkitc-1", "id": "esp", "top": -50, "left": -350, "attrs": {} },
+    { "type": "wokwi-microsd-card", "id": "sd1", "top": 200, "left": -350, "attrs": {} },
     {
-      "type": "board-esp32-s3-devkitc-1",
-      "id": "esp",
-      "top": -50,
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "top": 300,
       "left": -350,
+      "attrs": { "volume": "0.1" }
+    },
+    {
+      "type": "wokwi-ili9341",
+      "id": "lcd1",
+      "top": -148.7,
+      "left": 97.2,
+      "rotate": 90,
       "attrs": {}
     },
-    { "type": "wokwi-microsd-card", "id": "sd1", "top": 200, "left": -350, "attrs": {} },
-    { "type": "wokwi-buzzer", "id": "bz1", "top": 300, "left": -350, "attrs": { "volume": "0.1" } },
-    { "type": "wokwi-ili9341", "id": "lcd1", "top": -150, "left": 100, "rotate": 90, "attrs": {} },
-    { "type": "wokwi-ky-040", "id": "encoder1", "top": 240, "left": 210, "attrs": {} },
-    { "type": "wokwi-pushbutton", "id": "btn_up", "top": 170, "left": 235, "attrs": { "color": "red", "label": "Vol" } },
-    { "type": "wokwi-pushbutton", "id": "btn_down", "top": 360, "left": 235, "attrs": { "color": "blue", "label": "Pos" } },
-    { "type": "wokwi-pushbutton", "id": "btn_left", "top": 265, "left": 130, "attrs": { "color": "green", "label": "Prev" } },
-    { "type": "wokwi-pushbutton", "id": "btn_right", "top": 265, "left": 340, "attrs": { "color": "yellow", "label": "Next" } }
+    { "type": "wokwi-ky-040", "id": "encoder1", "top": 251.3, "left": 210.4, "attrs": {} },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_up",
+      "top": 170,
+      "left": 235,
+      "attrs": { "color": "red", "label": "Vol" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_down",
+      "top": 380.6,
+      "left": 230.4,
+      "attrs": { "color": "blue", "label": "Pos" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_left",
+      "top": 265,
+      "left": 130,
+      "attrs": { "color": "green", "label": "Prev" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_right",
+      "top": 265,
+      "left": 340,
+      "attrs": { "color": "yellow", "label": "Next" }
+    }
   ],
   "connections": [
     [ "esp:TX", "$serialMonitor:RX", "", [] ],
@@ -50,7 +81,10 @@
     [ "btn_left:1.l", "esp:18", "gray", [ "v40", "h-450", "v-200" ] ],
     [ "btn_left:2.l", "esp:GND.1", "black", [ "v50", "h-460", "v-190" ] ],
     [ "btn_right:1.l", "esp:8", "gray", [ "v80", "h-680", "v-200" ] ],
-    [ "btn_right:2.l", "esp:GND.1", "black", [ "v90", "h-690", "v-190" ] ]
+    [ "btn_right:2.l", "esp:GND.1", "black", [ "v90", "h-690", "v-190" ] ],
+    [ "lcd1:VCC", "esp:3V3.1", "red", [ "h-79.6", "v-104.3", "h-326.4", "v124.8" ] ],
+    [ "lcd1:LED", "esp:3V3.2", "red", [ "h-96", "v-144.01", "h-316.8", "v105.6" ] ],
+    [ "lcd1:MISO", "esp:13", "green", [ "h-105.6", "v-144.01", "h-326.4", "v249.6" ] ]
   ],
   "dependencies": {}
 }

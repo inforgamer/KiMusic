@@ -1,4 +1,5 @@
 #include <Arduino.h> 
+#include "Screen.hpp"
 
 using namespace std;
 
@@ -171,7 +172,7 @@ class Player
         } else if (this->volume <= 0) {
              this->volume = 0;
         }
-        Serial.printf("Volume atual: %d\n", this->volume);
+        Serial.printf("Volume atual: %d\r\n", this->volume);
     };  
     
     void setPosition(int position)
@@ -182,12 +183,13 @@ class Player
 
 
 Player kiMusic;
-
+Screen screen;
 
 void setup() {
     Serial.begin(115200);
     delay(1000); 
 
+    screen.init();
     Serial.println("KiMusic Iniciado no ESP32...");
 }
 
