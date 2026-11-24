@@ -133,12 +133,16 @@ class FakeDevice : public DeviceControl
     public:
         int level = 80;
         int powerOffs = 0;
+        bool screenIsOff = false;
 
         int brightness() const override { return level; }
         void setBrightness(int p) override
         {
             level = std::max(BRIGHTNESS_MIN, std::min(BRIGHTNESS_MAX, p));
         }
+        void screenOff() override { screenIsOff = true; }
+        void screenOn() override { screenIsOff = false; }
+        bool isScreenOff() const override { return screenIsOff; }
         void powerOff() override { powerOffs++; }
 };
 
@@ -656,7 +660,7 @@ static void testMenuPlaylists()
 
 static void testMenuSettings()
 {
-    std::printf("Menu: configuracoes - brilho e desligar\n");
+    std::printf("Menu: configuracoes - brilho, desligar tela e desligar\n");
     FakeSource src({100});
     FakeView view;
     FakeDevice dev;
@@ -668,7 +672,7 @@ static void testMenuSettings()
     m.rotate(+Menu::ITEM_SETTINGS);
     m.select();
     CHECK_EQ(m.page() == Menu::Page::Settings, true);
-    std::vector<std::string> expected = {"Brilho: 80%", "Desligar", "Voltar"};
+    std::vector<std::string> expected = {"Brilho: 80%", "Desligar tela", "Desligar", "Voltar"};
     CHECK_EQ(view.menuRows, expected);
 
     m.select();                                // entra na edicao do brilho
@@ -685,7 +689,17 @@ static void testMenuSettings()
     CHECK_EQ(m.isEditing(), false);
     CHECK_EQ(view.menuRows[0], std::string("Brilho: 100%"));
 
-    m.rotate(+1);                              // Desligar
+    m.rotate(+1);                              // Desligar tela
+    m.select();
+    CHECK_EQ(dev.screenIsOff, true);
+    CHECK_EQ(dev.powerOffs, 0);                // so a tela
+    CHECK_EQ(m.isOpen(), false);
+    dev.screenOn();
+
+    m.open();
+    m.rotate(+Menu::ITEM_SETTINGS);
+    m.select();
+    m.rotate(+Menu::SET_POWER_OFF);            // Desligar
     m.select();
     CHECK_EQ(dev.powerOffs, 1);
     CHECK_EQ(m.isOpen(), false);

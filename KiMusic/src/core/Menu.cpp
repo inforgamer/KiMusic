@@ -187,6 +187,13 @@ void Menu::selectSettings()
             }
             break;
 
+        case SET_SCREEN_OFF:
+            close();
+            if (device) {
+                device->screenOff();
+            }
+            break;
+
         case SET_POWER_OFF:
             close();
             if (device) {
@@ -235,7 +242,8 @@ std::string Menu::itemText(int item) const
                     std::string value = std::to_string(device ? device->brightness() : 100) + "%";
                     return editingBrightness ? "Brilho: < " + value + " >" : "Brilho: " + value;
                 }
-                case SET_POWER_OFF: return "Desligar";
+                case SET_SCREEN_OFF: return "Desligar tela";
+                case SET_POWER_OFF:  return "Desligar";
                 default:            return "Voltar";
             }
 

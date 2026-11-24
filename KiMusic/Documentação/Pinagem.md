@@ -89,12 +89,13 @@
 
 ## ⏻ 7. Ligar / Desligar
 
-Não há botão de energia separado: o **botão central do encoder (GPIO 5)** faz isso.
+Não há botão de energia separado.
 
 | Ação | Resultado |
 | :--- | :--- |
-| Segurar **6 s** com o aparelho ligado | Salva os ajustes e desliga (deep sleep) |
-| Segurar **2 s** com o aparelho desligado | Liga |
+| **Menu → Configurações → Desligar** | Salva os ajustes e desliga (deep sleep) |
+| **Menu → Configurações → Desligar tela** | Apaga só a tela; a música continua. Qualquer botão acende de novo |
+| Segurar o **botão central (GPIO 5) por 2 s** com o aparelho desligado | Liga |
 | Ligar a alimentação ou apertar RESET | Liga direto |
 
 > **Consumo:** no deep sleep o ESP32-S3 gasta poucos microampères, mas o display, o SD e o DAC continuam ligados no 3V3. Para a bateria durar com o aparelho "desligado", ligue o 3V3 desses módulos através de uma chave de carga (MOSFET canal P, ex.: AO3401) comandada por um GPIO livre — o firmware pode ser adaptado para cortar essa chave antes de dormir.

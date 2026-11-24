@@ -1,13 +1,13 @@
 // =============================================================================
 //  App.hpp  -  Le os botoes e decide quem recebe cada comando
 // -----------------------------------------------------------------------------
-//  Botao central (sempre):
-//    clique ................ Play/Pause (menu fechado) ou escolher (menu aberto)
-//    segurar 3 s ........... bipe de aviso; SOLTAR entre 3 e 6 s abre/fecha o menu
-//    segurar 6 s ........... desliga (deep sleep). Para ligar: segurar 2 s
+//  Tela apagada (Menu > Configuracoes > Desligar tela):
+//    qualquer botao ou o encoder ... acende a tela (esse toque nao faz mais nada)
 //
 //  Menu fechado:
 //    encoder ............... volume ou posicao (conforme o modo)
+//    clique central ........ Play/Pause
+//    segurar central (3 s) . abre o menu
 //    Vol (cima) ............ liga/desliga o modo Volume
 //    Pos (baixo) ........... liga/desliga o modo Posicao
 //    Prev (esquerda) ....... musica anterior / volta ao inicio
@@ -15,8 +15,13 @@
 //
 //  Menu aberto:
 //    encoder ............... move a selecao (ou ajusta o brilho em edicao)
+//    clique central ........ escolhe
 //    Prev .................. volta uma pagina / fecha
+//    segurar central (3 s) . fecha o menu
 //    Vol, Pos, Next ........ ignorados
+//
+//  Desligar e so pelo menu (Configuracoes > Desligar). Para ligar: segurar o
+//  central 2 s (ver system/Power).
 //
 //  Toda a logica fica em Player, Menu e Device; aqui so ha o roteamento e os bipes.
 // =============================================================================
@@ -61,10 +66,15 @@ class App
             bool next;
             bool volume;
             bool position;
+
+            bool any() const
+            {
+                return rotation != 0 || center != ButtonEvent::None ||
+                       previous || next || volume || position;
+            }
         };
 
         Input readInput();
-        bool handleCenterHold(ButtonEvent center);   // true se tratou (menu/desligar)
         void handleMenu(const Input &in);
         void handlePlayer(const Input &in);
 };

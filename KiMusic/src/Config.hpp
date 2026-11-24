@@ -35,9 +35,9 @@ namespace Config
     constexpr uint8_t PIN_DAC_MUTE  = 39;   // XSMT: HIGH = som, LOW = mudo
 
     // ---- Botao central: tempos de pressao ----
-    constexpr uint32_t MENU_HOLD_MS      = 3000;  // soltar entre 3 e 6 s: abre/fecha o menu
-    constexpr uint32_t POWER_OFF_HOLD_MS = 6000;  // segurar 6 s ligado: desliga
-    constexpr uint32_t POWER_ON_HOLD_MS  = 2000;  // segurar 2 s desligado: liga
+    constexpr uint32_t MENU_HOLD_MS     = 3000;   // segurar 3 s: abre/fecha o menu
+    constexpr uint32_t POWER_ON_HOLD_MS = 2000;   // segurar 2 s desligado: liga
+                                                  // (desligar: Menu > Configuracoes > Desligar)
 
     // ---- Diversos ----
     constexpr uint32_t SERIAL_BAUD  = 115200;

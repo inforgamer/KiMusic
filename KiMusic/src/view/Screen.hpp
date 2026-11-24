@@ -45,6 +45,7 @@ class Screen
         void setBrightness(int percent);     // 0..100
         void showMessage(const char *text);  // tela cheia, desenhada na hora (ex.: "Desligando...")
         void powerDown();                    // apaga a luz e poe o ILI9341 para dormir
+        void wakeUp(int brightness);         // acorda o ILI9341, redesenha e reacende a luz
 
         // ---- Tela principal ----
         void setMusicInfo(const char *title, const char *artist, const char *album);

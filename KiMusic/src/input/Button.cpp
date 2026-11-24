@@ -3,8 +3,7 @@
 // =============================================================================
 #include "input/Button.hpp"
 
-Button::Button(uint8_t p, uint32_t hold, uint32_t veryLong)
-    : pin(p), holdMs(hold), veryLongMs(veryLong) {}
+Button::Button(uint8_t p, uint32_t longPress) : pin(p), longPressMs(longPress) {}
 
 void Button::begin()
 {
@@ -25,29 +24,21 @@ ButtonEvent Button::poll()
     if (now - lastChange >= DEBOUNCE_MS && reading != stableState) {
         stableState = reading;
 
-        if (stableState) {                         // acabou de apertar
+        if (stableState) {                              // acabou de apertar
             pressStart = now;
-            holdFired = false;
-            veryLongFired = false;
-            return holdMs == 0 ? ButtonEvent::Click : ButtonEvent::None;
+            longFired = false;
+            return longPressMs == 0 ? ButtonEvent::Click : ButtonEvent::None;
         }
-
-        // Acabou de soltar.
-        if (holdMs == 0 || veryLongFired) return ButtonEvent::None;
-        return holdFired ? ButtonEvent::LongRelease : ButtonEvent::Click;
+        if (longPressMs > 0 && !longFired) {            // soltou antes do tempo
+            return ButtonEvent::Click;
+        }
+        return ButtonEvent::None;
     }
 
-    // Ainda apertado: completou algum dos tempos?
-    if (stableState && holdMs > 0) {
-        uint32_t held = now - pressStart;
-        if (veryLongMs > 0 && !veryLongFired && held >= veryLongMs) {
-            veryLongFired = true;
-            return ButtonEvent::VeryLongHold;
-        }
-        if (!holdFired && held >= holdMs) {
-            holdFired = true;
-            return ButtonEvent::HoldReached;
-        }
+    // Ainda apertado: completou o tempo da pressao longa?
+    if (stableState && longPressMs > 0 && !longFired && now - pressStart >= longPressMs) {
+        longFired = true;
+        return ButtonEvent::LongPress;
     }
     return ButtonEvent::None;
 }

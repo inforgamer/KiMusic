@@ -1,7 +1,8 @@
 // =============================================================================
 //  system/Device.hpp  -  Brilho, desligar e ajustes salvos
 // -----------------------------------------------------------------------------
-//  Implementa DeviceControl (usado pelo Menu) e guarda os ajustes na memoria
+//  Implementa DeviceControl (usado pelo Menu e pelo App): brilho, apagar a
+//  tela (a musica continua) e desligar. Tambem guarda os ajustes na memoria
 //  flash (NVS, biblioteca Preferences), para voltarem iguais ao ligar:
 //    - brilho da tela  (salvo a cada mudanca)
 //    - volume e modo Repetir (salvos ao desligar)
@@ -28,6 +29,9 @@ class Device : public DeviceControl
         // ---- DeviceControl ----
         int brightness() const override { return brightnessPercent; }
         void setBrightness(int percent) override;
+        void screenOff() override;
+        void screenOn() override;
+        bool isScreenOff() const override { return screenIsOff; }
         void powerOff() override;
 
     private:
@@ -39,6 +43,7 @@ class Device : public DeviceControl
         uint8_t powerButtonPin;
         Preferences prefs;
         int brightnessPercent = BRIGHTNESS_DEFAULT;
+        bool screenIsOff = false;
 
         void saveAll();
 };

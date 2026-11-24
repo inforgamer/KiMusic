@@ -1,7 +1,7 @@
 // =============================================================================
 //  core/Menu.hpp  -  Navegacao do menu
 // -----------------------------------------------------------------------------
-//  Aberto soltando o botao central entre 3 e 6 s (ver App). Paginas:
+//  Aberto segurando o botao central por 3 s (ver App). Paginas:
 //
 //    Menu
 //     |- Musicas ............... musicas da lista atual; escolher uma toca ela
@@ -11,7 +11,8 @@
 //     |- Favoritar musica ...... adiciona a musica atual na playlist Favoritas
 //     |- Configuracoes
 //     |    |- Brilho: NN% ...... clique para ajustar com o encoder, clique para salvar
-//     |    |- Desligar ......... desliga o aparelho
+//     |    |- Desligar tela .... apaga so a tela; a musica continua
+//     |    |- Desligar ......... desliga o aparelho (para ligar: segurar o central 2 s)
 //     |    '- Voltar
 //     '- Voltar ................ fecha o menu
 //
@@ -67,6 +68,7 @@ class Menu
         enum SettingsItem
         {
             SET_BRIGHTNESS = 0,
+            SET_SCREEN_OFF,
             SET_POWER_OFF,
             SET_BACK,
             SETTINGS_ITEM_COUNT

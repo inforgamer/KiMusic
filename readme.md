@@ -48,8 +48,7 @@ A pinagem completa está em [`KiMusic/Documentação/Pinagem.md`](KiMusic/Docume
 | :--- | :--- | :--- |
 | **Encoder (girar)** | Volume ou posição, conforme o modo | Move a seleção (ou ajusta o brilho) |
 | **Central (clique)** | Play / Pause | Escolhe o item |
-| **Central (segurar 3 s e soltar)** | Abre o menu (bipe aos 3 s) | Fecha o menu |
-| **Central (segurar 6 s)** | Desliga | Desliga |
+| **Central (segurar 3 s)** | Abre o menu | Fecha o menu |
 | **Central (segurar 2 s, desligado)** | Liga | — |
 | **Vol** (cima) | Liga/desliga o modo Volume (mostra a barra) | — |
 | **Pos** (baixo) | Liga/desliga o modo Posição (5 s por passo) | — |
@@ -67,7 +66,8 @@ Menu
  ├─ Favoritar música ........ adiciona a música atual na playlist "Favoritas"
  ├─ Configurações
  │   ├─ Brilho: NN% ......... clique, gire para ajustar (10% a 100%), clique para salvar
- │   ├─ Desligar
+ │   ├─ Desligar tela ....... apaga só a tela; a música continua (qualquer botão acende)
+ │   ├─ Desligar ............ desliga o aparelho (para ligar: segurar o central 2 s)
  │   └─ Voltar
  └─ Voltar .................. fecha o menu
 ```

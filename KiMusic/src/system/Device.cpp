@@ -43,6 +43,26 @@ void Device::setBrightness(int percent)
     prefs.putUChar(KEY_BRIGHTNESS, (uint8_t)percent);
 }
 
+void Device::screenOff()
+{
+    if (screenIsOff) {
+        return;
+    }
+    Serial.println("Tela apagada (a musica continua)");
+    screenIsOff = true;
+    screen.powerDown();
+}
+
+void Device::screenOn()
+{
+    if (!screenIsOff) {
+        return;
+    }
+    Serial.println("Tela acesa");
+    screenIsOff = false;
+    screen.wakeUp(brightnessPercent);
+}
+
 void Device::saveAll()
 {
     prefs.putUChar(KEY_BRIGHTNESS, (uint8_t)brightnessPercent);
@@ -58,6 +78,9 @@ void Device::powerOff()
     saveAll();
     prefs.end();
 
+    if (screenIsOff) {
+        screen.wakeUp(brightnessPercent);   // para mostrar a mensagem
+    }
     screen.showMessage("Desligando...");
     delay(800);
     screen.powerDown();                 // apaga a luz de fundo e poe o display para dormir

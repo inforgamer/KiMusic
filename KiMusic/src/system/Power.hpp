@@ -4,7 +4,7 @@
 //  "Desligado" = deep sleep do ESP32-S3 (consumo de microamperes no chip).
 //  Quem acorda o chip e o proprio botao central (GPIO 5, pino RTC).
 //
-//    Ligado    -> segurar 6 s -> Device::powerOff() -> Power::sleep()
+//    Ligado    -> Menu > Configuracoes > Desligar -> Device::powerOff() -> Power::sleep()
 //    Desligado -> apertar     -> o chip acorda e roda o setup()
 //                 -> Power::handleWakeup(): se o botao nao ficar 2 s apertado,
 //                    volta a dormir sem ligar a tela (toque acidental)

@@ -189,6 +189,18 @@ void Screen::powerDown()
     delay(120);
 }
 
+void Screen::wakeUp(int brightness)
+{
+    tft.writecommand(0x11);   // ILI9341: SLPOUT
+    delay(120);               // o controlador pede 120 ms antes do proximo comando
+    tft.writecommand(0x29);   // ILI9341: DISPON
+
+    // Redesenha a tela inteira antes de acender a luz (sem mostrar lixo).
+    lv_obj_invalidate(lv_scr_act());
+    lv_refr_now(nullptr);
+    setBrightness(brightness);
+}
+
 // -----------------------------------------------------------------------------
 //  Capa
 // -----------------------------------------------------------------------------

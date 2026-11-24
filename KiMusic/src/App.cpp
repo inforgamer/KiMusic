@@ -9,7 +9,7 @@ App::App(Player &p, Menu &m, DeviceControl &d)
       menu(m),
       device(d),
       encoder(Config::PIN_ENCODER_A, Config::PIN_ENCODER_B),
-      centerButton(Config::PIN_CENTER, Config::MENU_HOLD_MS, Config::POWER_OFF_HOLD_MS),
+      centerButton(Config::PIN_CENTER, Config::MENU_HOLD_MS),
       previousButton(Config::PIN_PREVIOUS),
       nextButton(Config::PIN_NEXT),
       volumeButton(Config::PIN_VOLUME),
@@ -31,15 +31,18 @@ void App::poll(uint32_t nowMs)
 {
     Input in = readInput();
 
-    if (!handleCenterHold(in.center)) {
-        if (menu.isOpen()) {
-            handleMenu(in);
-        } else {
-            handlePlayer(in);
+    if (device.isScreenOff()) {
+        // Tela apagada: o primeiro toque so acende a tela.
+        if (in.any()) {
+            device.screenOn();
         }
+    } else if (menu.isOpen()) {
+        handleMenu(in);
+    } else {
+        handlePlayer(in);
     }
 
-    player.update(nowMs);   // a musica continua andando com o menu aberto
+    player.update(nowMs);   // a musica continua andando com o menu aberto ou a tela apagada
 }
 
 App::Input App::readInput()
@@ -55,34 +58,6 @@ App::Input App::readInput()
 }
 
 // -----------------------------------------------------------------------------
-//  Pressao longa do botao central (vale com o menu aberto ou fechado)
-// -----------------------------------------------------------------------------
-
-bool App::handleCenterHold(ButtonEvent center)
-{
-    switch (center) {
-        case ButtonEvent::HoldReached:      // 3 s: avisa que soltar agora abre o menu
-            buzzer.click();
-            return true;
-
-        case ButtonEvent::LongRelease:      // soltou entre 3 e 6 s
-            buzzer.longClick();
-            if (menu.isOpen()) menu.close();
-            else menu.open();
-            return true;
-
-        case ButtonEvent::VeryLongHold:     // 6 s: desliga
-            buzzer.longClick();
-            menu.close();
-            device.powerOff();              // na placa nao retorna
-            return true;
-
-        default:
-            return false;
-    }
-}
-
-// -----------------------------------------------------------------------------
 //  Menu aberto
 // -----------------------------------------------------------------------------
 
@@ -92,7 +67,10 @@ void App::handleMenu(const Input &in)
         menu.rotate(in.rotation);
     }
 
-    if (in.center == ButtonEvent::Click) {
+    if (in.center == ButtonEvent::LongPress) {
+        buzzer.longClick();
+        menu.close();
+    } else if (in.center == ButtonEvent::Click) {
         buzzer.click();
         menu.select();
     } else if (in.previous) {
@@ -110,6 +88,12 @@ void App::handlePlayer(const Input &in)
 {
     if (in.rotation != 0) {
         player.rotate(in.rotation);
+    }
+
+    if (in.center == ButtonEvent::LongPress) {
+        buzzer.longClick();
+        menu.open();
+        return;   // o resto desta volta e ignorado
     }
 
     if (in.center == ButtonEvent::Click) {
