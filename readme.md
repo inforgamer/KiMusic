@@ -26,6 +26,7 @@ O coração do projeto roda em **C++**, focando em controle de baixo nível e pe
 * PlatformIO
 * LVGL 8.3 + SquareLine Studio (Interface)
 * TFT_eSPI (Driver do display)
+* ESP8266Audio (Decodificador MP3 + saída I2S)
 * VS Code & Wokwi (Simulação)
 * Git / GitHub
 
@@ -35,7 +36,7 @@ O coração do projeto roda em **C++**, focando em controle de baixo nível e pe
 * Navegação: **Rotary Encoder + 4 botões**
 * Feedback: **Buzzer**
 * Armazenamento: **Módulo de Cartão SD**
-* Saída: **DAC de Áudio e conexão P2**
+* Saída: **DAC PCM5102A (I2S) e conexão P2**
 
 A pinagem completa está em [`KiMusic/Documentação/Pinagem.md`](KiMusic/Documentação/Pinagem.md).
 
@@ -45,9 +46,11 @@ A pinagem completa está em [`KiMusic/Documentação/Pinagem.md`](KiMusic/Docume
 
 | Botão | Menu fechado | Menu aberto |
 | :--- | :--- | :--- |
-| **Encoder (girar)** | Volume ou posição, conforme o modo | Move a seleção |
+| **Encoder (girar)** | Volume ou posição, conforme o modo | Move a seleção (ou ajusta o brilho) |
 | **Central (clique)** | Play / Pause | Escolhe o item |
-| **Central (segurar 3 s)** | Abre o menu | Fecha o menu |
+| **Central (segurar 3 s e soltar)** | Abre o menu (bipe aos 3 s) | Fecha o menu |
+| **Central (segurar 6 s)** | Desliga | Desliga |
+| **Central (segurar 2 s, desligado)** | Liga | — |
 | **Vol** (cima) | Liga/desliga o modo Volume (mostra a barra) | — |
 | **Pos** (baixo) | Liga/desliga o modo Posição (5 s por passo) | — |
 | **Prev** (esquerda) | Volta ao início da música; se ela acabou de começar, vai para a anterior | Volta uma página / fecha |
@@ -57,21 +60,40 @@ A pinagem completa está em [`KiMusic/Documentação/Pinagem.md`](KiMusic/Docume
 
 ```
 Menu
- ├─ Músicas ............. lista todas as músicas do SD; escolher uma começa a tocá-la
- ├─ Repetir: <modo> ..... Desligado → Todas → Uma
- └─ Voltar .............. fecha o menu
+ ├─ Músicas ................. músicas da lista atual; escolher uma começa a tocá-la
+ ├─ Playlists ............... "Todas as músicas" + playlists .m3u do SD
+ ├─ Aleatório: <modo> ....... Desligado → Playlist → Geral
+ ├─ Repetir: <modo> ......... Desligado → Todas → Uma
+ ├─ Favoritar música ........ adiciona a música atual na playlist "Favoritas"
+ ├─ Configurações
+ │   ├─ Brilho: NN% ......... clique, gire para ajustar (10% a 100%), clique para salvar
+ │   ├─ Desligar
+ │   └─ Voltar
+ └─ Voltar .................. fecha o menu
 ```
 
-* **Desligado:** no fim da playlist volta para a primeira música e pausa.
-* **Todas:** no fim da playlist volta para a primeira e continua tocando.
-* **Uma:** repete a música atual.
+* **Aleatório Playlist:** embaralha a lista atual. **Geral:** passa para todas as músicas do SD e embaralha.
+* **Repetir Desligado:** no fim da lista volta para a primeira música e pausa. **Todas:** continua tocando. **Uma:** repete a atual.
+* Brilho, volume e Repetir ficam salvos e voltam iguais ao ligar.
 
 ### Cartão SD
 
 ```
-/music/*.mp3              músicas (ordem alfabética, até 200)
-/cover/<nome da música>.jpg  capa, se o MP3 não tiver uma embutida
+/music/*.mp3                    músicas (ordem alfabética, até 200)
+/cover/<nome da música>.jpg     capa, se o MP3 não tiver uma embutida
+/playlists/<nome>.m3u           playlists (uma música por linha)
+/playlists/Favoritas.m3u        criada pelo "Favoritar música"
 ```
+
+Exemplo de playlist (`/playlists/Treino.m3u`):
+
+```
+#EXTM3U
+/music/SoundHelix-Song-1.mp3
+SoundHelix-Song-3.mp3
+```
+
+Linhas com `#` são ignoradas; um nome sem pasta é procurado em `/music`.
 
 ---
 
@@ -81,11 +103,12 @@ Menu
 KiMusic/
 ├─ src/
 │  ├─ main.cpp      setup()/loop(): cria e liga os módulos
-│  ├─ App           lê os botões e chama Player/Menu
+│  ├─ App           lê os botões e chama Player/Menu/Device
 │  ├─ Config.hpp    pinagem e constantes
 │  ├─ core/         regras do player e do menu (sem Arduino, testadas no PC)
 │  ├─ input/        Encoder, Button (clique e pressão longa), Buzzer
-│  ├─ storage/      Library (músicas do SD) e DemoSource (sem SD)
+│  ├─ storage/      TrackList, SdCatalog (músicas e playlists do SD), DemoSource
+│  ├─ system/       AudioEngine (MP3 → PCM5102A), Device (brilho/ajustes), Power
 │  ├─ view/         Screen (LVGL) e ScreenView (liga o núcleo à tela)
 │  └─ UI/           gerado pelo SquareLine Studio — não editar à mão
 ├─ lib/
@@ -94,7 +117,7 @@ KiMusic/
 └─ test/host/       testes no PC
 ```
 
-Fluxo: **botões → App → Player/Menu → ScreenView → Screen**
+Fluxo: **botões → App → Player/Menu → ScreenView → Screen** e **Player → AudioEngine → DAC**
 
 ### Testes no PC
 

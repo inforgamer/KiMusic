@@ -12,8 +12,94 @@ void Player::begin(const TrackSource &src, uint32_t nowMs)
     playing = false;
     currentMode = PlayerMode::Normal;
 
-    loadTrack(0);
+    buildOrder(0);
+    loadAt(0);
+    if (audio) audio->setVolume(currentVolume);
     view.volumeChanged(currentVolume);
+    notifyStatus();
+}
+
+// -----------------------------------------------------------------------------
+//  Ordem de reproducao
+// -----------------------------------------------------------------------------
+
+uint32_t Player::nextRandom()
+{
+    // xorshift32: simples, rapido e reproduzivel nos testes.
+    rng ^= rng << 13;
+    rng ^= rng >> 17;
+    rng ^= rng << 5;
+    return rng;
+}
+
+void Player::buildOrder(size_t first)
+{
+    const size_t count = source->count();
+    order.resize(count);
+    for (size_t i = 0; i < count; i++) {
+        order[i] = i;
+    }
+    position = 0;
+    if (count == 0) {
+        return;
+    }
+    first %= count;
+
+    if (shuffleMode == ShuffleMode::Off) {
+        position = first;
+        return;
+    }
+
+    // Embaralhado: a musica 'first' fica na frente e o resto e sorteado
+    // (Fisher-Yates nas posicoes 1..count-1).
+    order[0] = first;
+    order[first] = 0;
+    for (size_t i = count - 1; i > 1; i--) {
+        size_t j = 1 + nextRandom() % i;   // j em [1, i]
+        size_t tmp = order[i];
+        order[i] = order[j];
+        order[j] = tmp;
+    }
+}
+
+void Player::setShuffle(ShuffleMode mode, const TrackSource *all)
+{
+    if (mode == ShuffleMode::All && all && all != source && all->count() > 0) {
+        // Troca para todas as musicas, mantendo a que esta tocando se ela existir la.
+        size_t keep = 0;
+        bool found = false;
+        for (size_t i = 0; i < all->count() && !currentPath.empty(); i++) {
+            if (all->path(i) == currentPath) {
+                keep = i;
+                found = true;
+                break;
+            }
+        }
+        source = all;
+        shuffleMode = mode;
+        buildOrder(keep);
+        if (!found) {
+            loadAt(0);     // a musica atual nao esta na lista geral: comeca outra
+        }
+        return;
+    }
+
+    shuffleMode = mode;
+    buildOrder(trackIndex());   // a musica atual continua tocando, so a ordem muda
+}
+
+void Player::setSource(const TrackSource &src, size_t startIndex, bool play)
+{
+    if (src.count() == 0) {
+        return;
+    }
+    source = &src;
+    if (shuffleMode == ShuffleMode::All) {
+        shuffleMode = ShuffleMode::Playlist;   // escolher uma lista sai do "geral"
+    }
+    buildOrder(startIndex);
+    playing = play;
+    loadAt(position);
     notifyStatus();
 }
 
@@ -24,12 +110,42 @@ void Player::begin(const TrackSource &src, uint32_t nowMs)
 void Player::update(uint32_t nowMs)
 {
     now = nowMs;
+
+    // Salto de posicao adiado: so reabre o audio quando o encoder parou.
+    if (seekPending && now - seekRequestedAt >= SEEK_DELAY_MS) {
+        seekPending = false;
+        if (playing) {
+            audioPlayFrom(elapsedSeconds);
+        }
+    }
+
     if (!playing) {
         return;
     }
 
-    // Conta todos os segundos inteiros que passaram (o loop pode atrasar,
-    // por exemplo enquanto uma capa e decodificada).
+    if (usesAudio()) {
+        if (audioError) {               // arquivo nao abriu: pula
+            audioError = false;
+            finishTrack();
+            return;
+        }
+        if (!audioLoaded || seekPending) {
+            return;
+        }
+        if (audio->finished()) {
+            finishTrack();
+            return;
+        }
+        uint32_t pos = audio->position();
+        if (pos > info.duration && info.duration > 0) pos = info.duration;
+        if (pos != elapsedSeconds) {
+            elapsedSeconds = pos;
+            notifyProgress();
+        }
+        return;
+    }
+
+    // Relogio simulado: conta todos os segundos inteiros que passaram.
     while (playing && now - lastSecond >= 1000) {
         lastSecond += 1000;
         tickSecond();
@@ -54,11 +170,21 @@ void Player::finishTrack()
         return;
     }
 
-    bool wasLast = index + 1 >= source->count();
-    loadTrack(index + 1);   // volta para a primeira depois da ultima
+    bool wasLast = position + 1 >= order.size();
+    if (wasLast && shuffleMode != ShuffleMode::Off) {
+        buildOrder(nextRandom() % order.size());   // nova volta embaralhada
+        if (repeatMode == RepeatMode::Off) {
+            playing = false;
+        }
+        loadAt(0);
+    } else {
+        if (wasLast && repeatMode == RepeatMode::Off) {
+            playing = false;   // fim da lista: volta para a primeira e pausa
+        }
+        loadAt(position + 1);
+    }
 
-    if (wasLast && repeatMode == RepeatMode::Off) {
-        playing = false;    // fim da playlist
+    if (!playing) {
         notifyStatus();
     }
 }
@@ -67,22 +193,38 @@ void Player::finishTrack()
 //  Troca de musica
 // -----------------------------------------------------------------------------
 
-void Player::loadTrack(size_t newIndex)
+void Player::loadAt(size_t orderPosition)
 {
-    index = newIndex % source->count();
+    position = order.empty() ? 0 : orderPosition % order.size();
+    size_t index = trackIndex();
+
     source->load(index, info);
+    currentPath = source->path(index);
     elapsedSeconds = 0;
     lastSecond = now;
+    seekPending = false;
 
     view.trackChanged(*source, index, info);
     notifyProgress();
+
+    if (playing) {
+        audioPlayFrom(0);
+    } else {
+        audioHalt();
+    }
 }
 
 void Player::restartTrack()
 {
     elapsedSeconds = 0;
     lastSecond = now;
+    seekPending = false;
     notifyProgress();
+    if (playing) {
+        audioPlayFrom(0);
+    } else {
+        audioHalt();
+    }
 }
 
 bool Player::next()
@@ -90,7 +232,12 @@ bool Player::next()
     if (currentMode != PlayerMode::Normal) {
         return false;
     }
-    loadTrack(index + 1);
+    if (position + 1 >= order.size() && shuffleMode != ShuffleMode::Off) {
+        buildOrder(nextRandom() % order.size());
+        loadAt(0);
+    } else {
+        loadAt(position + 1);
+    }
     return true;
 }
 
@@ -104,24 +251,64 @@ bool Player::previous()
     if (elapsedSeconds > RESTART_THRESHOLD) {
         restartTrack();
     } else {
-        loadTrack(index == 0 ? source->count() - 1 : index - 1);
+        loadAt(position == 0 ? order.size() - 1 : position - 1);
     }
     return true;
 }
 
-void Player::playTrack(size_t newIndex)
+void Player::playTrack(size_t index)
 {
-    loadTrack(newIndex);
     playing = true;
-    lastSecond = now;
+    if (shuffleMode != ShuffleMode::Off) {
+        buildOrder(index);        // a escolhida vira a primeira da nova ordem
+        loadAt(0);
+    } else {
+        loadAt(index);
+    }
     notifyStatus();
 }
 
 void Player::togglePlay()
 {
     playing = !playing;
-    lastSecond = now;   // o proximo segundo comeca a contar agora
+    lastSecond = now;   // relogio simulado: o proximo segundo comeca a contar agora
+
+    if (usesAudio()) {
+        if (playing) {
+            if (audioLoaded && !seekPending) {
+                audio->resume();
+            } else {
+                seekPending = false;              // ja abre na posicao atual
+                audioPlayFrom(elapsedSeconds);
+            }
+        } else if (audioLoaded) {
+            audio->pause();
+        }
+    }
     notifyStatus();
+}
+
+// -----------------------------------------------------------------------------
+//  Audio
+// -----------------------------------------------------------------------------
+
+void Player::audioPlayFrom(uint32_t seconds)
+{
+    if (!usesAudio()) {
+        audioLoaded = false;
+        return;
+    }
+    audioLoaded = audio->start(currentPath, info, seconds);
+    audioError = !audioLoaded;
+}
+
+void Player::audioHalt()
+{
+    if (audio) {
+        audio->stop();
+    }
+    audioLoaded = false;
+    audioError = false;
 }
 
 // -----------------------------------------------------------------------------
@@ -170,6 +357,7 @@ void Player::setVolume(int value)
     if (value < VOLUME_MIN) value = VOLUME_MIN;
     if (value > VOLUME_MAX) value = VOLUME_MAX;
     currentVolume = value;
+    if (audio) audio->setVolume(currentVolume);
     view.volumeChanged(currentVolume);
 }
 
@@ -179,7 +367,17 @@ void Player::seek(int steps)
     if (target < 0) target = 0;
     if (target > info.duration) target = info.duration;
     elapsedSeconds = (uint32_t)target;
+    lastSecond = now;
     notifyProgress();
+
+    // O audio so salta depois que o encoder parar (ver update()).
+    if (usesAudio()) {
+        seekPending = true;
+        seekRequestedAt = now;
+        if (!playing) {
+            audioHalt();   // pausado: na volta do Play o audio abre ja na nova posicao
+        }
+    }
 }
 
 void Player::cycleRepeat()

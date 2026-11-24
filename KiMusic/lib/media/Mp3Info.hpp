@@ -38,6 +38,22 @@ struct Mp3Info
     CoverFormat coverFormat = CoverFormat::None;
     uint32_t coverOffset = 0;   // byte do arquivo onde a imagem comeca
     uint32_t coverSize = 0;     // tamanho da imagem em bytes
+
+    // Audio: onde comeca o primeiro frame MPEG e quantos bytes de audio ha
+    // ate o fim (sem a tag ID3v1). Usado para converter segundos em bytes
+    // ao mudar a posicao (exato em CBR, aproximado em VBR).
+    uint32_t audioOffset = 0;
+    uint32_t audioBytes = 0;
+    uint32_t sampleRate = 0;    // Hz do primeiro frame
+    uint32_t bitrate = 0;       // kbps do primeiro frame
+
+    // Byte do arquivo correspondente a 'seconds' (para salto de posicao).
+    uint32_t offsetForSecond(uint32_t seconds) const
+    {
+        if (duration == 0 || seconds == 0) return audioOffset;
+        if (seconds >= duration) return audioOffset + audioBytes;
+        return audioOffset + (uint32_t)((uint64_t)audioBytes * seconds / duration);
+    }
 };
 
 // Preenche out com os dados do MP3.

@@ -371,6 +371,13 @@ bool readMp3Info(ByteReader &reader, Mp3Info &out)
         return false;
     }
 
+    // Trecho de audio (usado para saltar no arquivo ao mudar a posicao).
+    uint32_t audioEnd = reader.size() - (hasId3v1 ? 128 : 0);
+    out.audioOffset = framePos;
+    out.audioBytes = audioEnd > framePos ? audioEnd - framePos : 0;
+    out.sampleRate = f.sampleRate;
+    out.bitrate = f.bitrate;
+
     if (tlenMs > 0) {
         out.duration = (tlenMs + 500) / 1000;
         return true;
@@ -395,8 +402,6 @@ bool readMp3Info(ByteReader &reader, Mp3Info &out)
     }
 
     // CBR: tamanho do audio / taxa de bits.
-    uint32_t audioEnd = reader.size() - (hasId3v1 ? 128 : 0);
-    uint64_t audioBytes = audioEnd > framePos ? audioEnd - framePos : 0;
-    out.duration = (uint32_t)((audioBytes * 8 + f.bitrate * 500) / (f.bitrate * 1000));
+    out.duration = (uint32_t)(((uint64_t)out.audioBytes * 8 + f.bitrate * 500) / (f.bitrate * 1000));
     return true;
 }

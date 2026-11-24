@@ -11,6 +11,7 @@
 //    - barra de volume (so aparece no modo Volume)          -> setVolume() / setStatus()
 //    - capa do album (140x140) ou icone de nota             -> coverBuffer() + showCover()
 //    - menu sobreposto                                      -> showMenu() / hideMenu()
+//    - brilho da luz de fundo (PWM no pino LED)             -> setBrightness()
 //
 //  Textos chegam em UTF-8 e sao convertidos para ASCII, porque as fontes
 //  Montserrat embutidas no LVGL nao tem letras acentuadas ("ç" vira "c").
@@ -37,6 +38,13 @@ class Screen
         // ---- Ciclo de vida ----
         void init();      // display, LVGL, tela do SquareLine, capa e menu
         void update();    // chamar no loop: avanca o relogio do LVGL e redesenha
+
+        // ---- Energia e luz de fundo ----
+        // Liga o PWM do pino LED do display (comeca apagado ate setBrightness).
+        void initBacklight(uint8_t pin, uint8_t ledcChannel);
+        void setBrightness(int percent);     // 0..100
+        void showMessage(const char *text);  // tela cheia, desenhada na hora (ex.: "Desligando...")
+        void powerDown();                    // apaga a luz e poe o ILI9341 para dormir
 
         // ---- Tela principal ----
         void setMusicInfo(const char *title, const char *artist, const char *album);
@@ -65,6 +73,8 @@ class Screen
         lv_disp_drv_t displayDriver;
         lv_color_t buffer[WIDTH * BUFFER_LINES];
         uint32_t lastTick = 0;
+
+        int backlightChannel = -1;   // canal LEDC da luz de fundo (-1 = sem controle)
 
         // Capa: imagem desenhada por cima de ui_AlbumCover.
         lv_color_t coverPixels[CoverDecoder::BUFFER_PIXELS];

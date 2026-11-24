@@ -15,9 +15,17 @@ enum class PlayerMode
 // O que acontece quando a musica termina.
 enum class RepeatMode
 {
-    Off,    // passa para a proxima; no fim da playlist volta para a primeira e pausa
-    All,    // passa para a proxima; no fim da playlist volta para a primeira e continua
+    Off,    // passa para a proxima; no fim da lista volta para a primeira e pausa
+    All,    // passa para a proxima; no fim da lista volta para a primeira e continua
     One     // repete a musica atual
+};
+
+// Ordem de reproducao.
+enum class ShuffleMode
+{
+    Off,        // ordem da lista
+    Playlist,   // embaralha a lista atual (playlist escolhida)
+    All         // troca para todas as musicas do SD e embaralha
 };
 
 inline const char *repeatModeName(RepeatMode mode)
@@ -26,6 +34,15 @@ inline const char *repeatModeName(RepeatMode mode)
         case RepeatMode::All: return "Todas";
         case RepeatMode::One: return "Uma";
         default:              return "Desligado";
+    }
+}
+
+inline const char *shuffleModeName(ShuffleMode mode)
+{
+    switch (mode) {
+        case ShuffleMode::Playlist: return "Playlist";
+        case ShuffleMode::All:      return "Geral";
+        default:                    return "Desligado";
     }
 }
 

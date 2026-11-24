@@ -139,6 +139,60 @@ void Screen::createCover()
     lv_obj_add_flag(coverObj, LV_OBJ_FLAG_HIDDEN);
 }
 
+// -----------------------------------------------------------------------------
+//  Luz de fundo e energia
+// -----------------------------------------------------------------------------
+
+void Screen::initBacklight(uint8_t pin, uint8_t ledcChannel)
+{
+    backlightChannel = ledcChannel;
+    ledcSetup(ledcChannel, 5000 /* Hz */, 8 /* bits: 0..255 */);
+    ledcAttachPin(pin, ledcChannel);
+    ledcWrite(ledcChannel, 0);   // apagado ate o brilho salvo ser aplicado
+}
+
+void Screen::setBrightness(int percent)
+{
+    if (backlightChannel < 0) {
+        return;
+    }
+    if (percent < 0) percent = 0;
+    if (percent > 100) percent = 100;
+    ledcWrite(backlightChannel, (uint32_t)percent * 255 / 100);
+}
+
+void Screen::showMessage(const char *text)
+{
+    lv_obj_t *overlay = lv_obj_create(lv_layer_top());
+    lv_obj_set_size(overlay, WIDTH, HEIGHT);
+    lv_obj_center(overlay);
+    lv_obj_set_style_radius(overlay, 0, LV_PART_MAIN);
+    lv_obj_set_style_border_width(overlay, 0, LV_PART_MAIN);
+    lv_obj_set_style_bg_color(overlay, lv_color_black(), LV_PART_MAIN);
+
+    char ascii[64];
+    toDisplayText(text, ascii, sizeof(ascii));
+    lv_obj_t *label = lv_label_create(overlay);
+    lv_label_set_text(label, ascii);
+    lv_obj_set_style_text_font(label, &lv_font_montserrat_18, LV_PART_MAIN);
+    lv_obj_center(label);
+
+    lv_refr_now(nullptr);   // desenha agora (o loop pode nao rodar mais)
+}
+
+void Screen::powerDown()
+{
+    setBrightness(0);
+    tft.writecommand(0x28);   // ILI9341: DISPOFF
+    delay(20);
+    tft.writecommand(0x10);   // ILI9341: SLPIN (modo de baixo consumo)
+    delay(120);
+}
+
+// -----------------------------------------------------------------------------
+//  Capa
+// -----------------------------------------------------------------------------
+
 void Screen::showCover(bool visible)
 {
     if (visible) {

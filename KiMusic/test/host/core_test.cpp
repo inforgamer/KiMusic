@@ -8,6 +8,7 @@
 #include "core/Player.hpp"
 #include "core/Menu.hpp"
 
+#include <algorithm>
 #include <string>
 
 // ---------- Fonte falsa: N musicas com duracoes conhecidas ----------
@@ -15,11 +16,18 @@ class FakeSource : public TrackSource
 {
     public:
         std::vector<uint32_t> durations;
+        std::string prefix;        // muda os caminhos/nomes (para simular playlists)
+        bool withFiles;
 
-        explicit FakeSource(std::vector<uint32_t> d) : durations(d) {}
+        explicit FakeSource(std::vector<uint32_t> d, std::string p = "Faixa ", bool files = false)
+            : durations(d), prefix(p), withFiles(files) {}
 
         size_t count() const override { return durations.size(); }
-        std::string name(size_t i) const override { return "Faixa " + std::to_string(i + 1); }
+        std::string name(size_t i) const override { return prefix + std::to_string(i + 1); }
+        std::string path(size_t i) const override
+        {
+            return withFiles ? "/music/" + name(i) + ".mp3" : std::string();
+        }
 
         bool load(size_t i, Mp3Info &info) const override
         {
@@ -37,6 +45,7 @@ class FakeView : public PlayerView
 {
     public:
         size_t trackIndex = 999;
+        std::string trackTitle;
         int trackChanges = 0;
         uint32_t elapsed = 0, duration = 0;
         bool playing = false;
@@ -47,9 +56,10 @@ class FakeView : public PlayerView
         std::vector<std::string> menuRows;
         int menuSelected = -1;
 
-        void trackChanged(const TrackSource &, size_t index, const Mp3Info &) override
+        void trackChanged(const TrackSource &, size_t index, const Mp3Info &info) override
         {
             trackIndex = index;
+            trackTitle = info.title;
             trackChanges++;
         }
         void progressChanged(uint32_t e, uint32_t d) override { elapsed = e; duration = d; }
@@ -62,6 +72,76 @@ class FakeView : public PlayerView
         void menuClosed() override { menuOpen = false; }
 };
 
+// ---------- Audio falso: registra os comandos ----------
+class FakeAudio : public AudioBackend
+{
+    public:
+        std::string path;
+        uint32_t startedAt = 0;
+        int starts = 0, pauses = 0, resumes = 0, stops = 0;
+        bool failNext = false;
+        bool isPaused = false;
+        uint32_t pos = 0;
+        bool done = false;
+        int volume = -1;
+
+        bool start(const std::string &p, const Mp3Info &, uint32_t s) override
+        {
+            starts++;
+            if (failNext) { failNext = false; return false; }
+            path = p; startedAt = s; pos = s; done = false; isPaused = false;
+            return true;
+        }
+        void pause() override { pauses++; isPaused = true; }
+        void resume() override { resumes++; isPaused = false; }
+        void stop() override { stops++; path.clear(); }
+        void setVolume(int v) override { volume = v; }
+        uint32_t position() const override { return pos; }
+        bool finished() const override { return done; }
+};
+
+// ---------- Catalogo falso: todas as musicas + playlists ----------
+class FakeCatalog : public Catalog
+{
+    public:
+        FakeSource all;
+        std::vector<FakeSource> lists;
+        std::vector<std::string> names;
+        std::vector<std::string> favorites;
+
+        FakeCatalog() : all({100, 100, 100, 100, 100, 100}, "Geral ", true) {}
+
+        const TrackSource &allTracks() const override { return all; }
+        size_t playlistCount() const override { return lists.size(); }
+        std::string playlistName(size_t i) const override { return names[i]; }
+        const TrackSource *openPlaylist(size_t i) override
+        {
+            return lists[i].count() ? &lists[i] : nullptr;
+        }
+        bool addToFavorites(const TrackSource &src, size_t index) override
+        {
+            std::string p = src.path(index);
+            if (std::find(favorites.begin(), favorites.end(), p) != favorites.end()) return false;
+            favorites.push_back(p);
+            return true;
+        }
+};
+
+// ---------- Aparelho falso ----------
+class FakeDevice : public DeviceControl
+{
+    public:
+        int level = 80;
+        int powerOffs = 0;
+
+        int brightness() const override { return level; }
+        void setBrightness(int p) override
+        {
+            level = std::max(BRIGHTNESS_MIN, std::min(BRIGHTNESS_MAX, p));
+        }
+        void powerOff() override { powerOffs++; }
+};
+
 // Avanca o relogio em passos de 100 ms (como o loop faria).
 static void run(Player &p, uint32_t &now, uint32_t ms)
 {
@@ -72,7 +152,7 @@ static void run(Player &p, uint32_t &now, uint32_t ms)
 }
 
 // =============================================================================
-//  Player
+//  Player: regras basicas (tempo simulado)
 // =============================================================================
 
 static void testBegin()
@@ -154,7 +234,7 @@ static void testModes()
 
 static void testClock()
 {
-    std::printf("Player: tempo so anda em Play\n");
+    std::printf("Player: tempo simulado so anda em Play\n");
     FakeSource src({100});
     FakeView view;
     Player p(view);
@@ -189,7 +269,7 @@ static void testRepeatModes()
         CHECK_EQ(p.trackIndex(), (size_t)1);
         CHECK_EQ(p.isPlaying(), true);
 
-        run(p, now, 2000);                     // fim da playlist (Desligado) -> 1a, pausado
+        run(p, now, 2000);                     // fim da lista (Desligado) -> 1a, pausado
         CHECK_EQ(p.trackIndex(), (size_t)0);
         CHECK_EQ(p.isPlaying(), false);
         CHECK_EQ(view.playing, false);
@@ -247,16 +327,196 @@ static void testInvalidTrack()
 }
 
 // =============================================================================
+//  Player: audio real (AudioBackend)
+// =============================================================================
+
+static void testAudioPlayback()
+{
+    std::printf("Audio: play/pause/volume, tempo vindo do decodificador, fim da musica\n");
+    FakeSource src({100, 100}, "Faixa ", true);
+    FakeView view;
+    FakeAudio audio;
+    Player p(view);
+    p.setAudio(&audio);
+    uint32_t now = 0;
+    p.begin(src, now);
+
+    CHECK_EQ(audio.volume, Player::VOLUME_DEFAULT);
+    CHECK_EQ(audio.starts, 0);                 // pausado: nada tocando
+
+    p.togglePlay();
+    CHECK_EQ(audio.starts, 1);
+    CHECK_EQ(audio.path, std::string("/music/Faixa 1.mp3"));
+    CHECK_EQ(audio.startedAt, 0u);
+
+    audio.pos = 42;                            // o tempo vem do decodificador...
+    run(p, now, 100);
+    CHECK_EQ(p.elapsed(), 42u);
+    CHECK_EQ(view.elapsed, 42u);
+    run(p, now, 5000);                         // ...e nao do relogio
+    CHECK_EQ(p.elapsed(), 42u);
+
+    p.togglePlay();
+    CHECK_EQ(audio.pauses, 1);
+    p.togglePlay();
+    CHECK_EQ(audio.resumes, 1);
+    CHECK_EQ(audio.starts, 1);                 // retomou, nao reabriu
+
+    p.toggleVolumeMode();
+    p.rotate(+5);
+    CHECK_EQ(audio.volume, Player::VOLUME_DEFAULT + 5);
+    p.toggleVolumeMode();
+
+    audio.done = true;                         // decodificador chegou ao fim
+    run(p, now, 100);
+    CHECK_EQ(p.trackIndex(), (size_t)1);
+    CHECK_EQ(audio.path, std::string("/music/Faixa 2.mp3"));
+    CHECK_EQ(audio.starts, 2);
+}
+
+static void testAudioSeek()
+{
+    std::printf("Audio: posicao pelo encoder so salta quando o encoder para\n");
+    FakeSource src({300}, "Faixa ", true);
+    FakeView view;
+    FakeAudio audio;
+    Player p(view);
+    p.setAudio(&audio);
+    uint32_t now = 0;
+    p.begin(src, now);
+    p.togglePlay();
+    audio.pos = 10;
+    run(p, now, 100);
+
+    p.togglePositionMode();
+    p.rotate(+1);                              // 15 s
+    p.rotate(+1);                              // 20 s
+    CHECK_EQ(p.elapsed(), 20u);
+    CHECK_EQ(audio.starts, 1);                 // ainda nao saltou
+    run(p, now, 200);
+    CHECK_EQ(p.elapsed(), 20u);                // nao foi sobrescrito pelo audio antigo
+    run(p, now, 300);
+    CHECK_EQ(audio.starts, 2);                 // saltou uma vez so
+    CHECK_EQ(audio.startedAt, 20u);
+
+    // Pausado: o salto acontece ao dar Play, ja na nova posicao.
+    p.togglePlay();
+    p.rotate(+2);                              // 30 s
+    p.togglePlay();
+    CHECK_EQ(audio.startedAt, 30u);
+    int starts = audio.starts;
+    run(p, now, 1000);
+    CHECK_EQ(audio.starts, starts);            // nao abriu de novo
+}
+
+static void testAudioError()
+{
+    std::printf("Audio: arquivo que nao abre e pulado\n");
+    FakeSource src({100, 100}, "Faixa ", true);
+    FakeView view;
+    FakeAudio audio;
+    Player p(view);
+    p.setAudio(&audio);
+    uint32_t now = 0;
+    p.begin(src, now);
+    audio.failNext = true;
+    p.togglePlay();
+    run(p, now, 100);
+    CHECK_EQ(p.trackIndex(), (size_t)1);
+    CHECK_EQ(audio.path, std::string("/music/Faixa 2.mp3"));
+    CHECK_EQ(p.isPlaying(), true);
+}
+
+// =============================================================================
+//  Player: aleatorio e troca de lista
+// =============================================================================
+
+static bool isPermutation(std::vector<size_t> order, size_t n)
+{
+    std::sort(order.begin(), order.end());
+    for (size_t i = 0; i < n; i++) if (order[i] != i) return false;
+    return order.size() == n;
+}
+
+static void testShuffle()
+{
+    std::printf("Aleatorio: ordem embaralhada, atual na frente, todas tocam uma vez\n");
+    std::vector<uint32_t> d(10, 1);
+    FakeSource src(d);
+    FakeView view;
+    Player p(view);
+    p.setRandomSeed(1234);
+    uint32_t now = 0;
+    p.begin(src, now);
+    p.next(); p.next();                        // musica 2
+
+    p.setShuffle(ShuffleMode::Playlist);
+    CHECK_EQ(p.trackIndex(), (size_t)2);       // continua na mesma musica
+    CHECK_EQ(p.playOrder()[0], (size_t)2);
+    CHECK_EQ(isPermutation(p.playOrder(), 10), true);
+
+    std::vector<size_t> sequential = {2, 3, 4, 5, 6, 7, 8, 9, 0, 1};
+    CHECK_EQ(p.playOrder() != sequential, true);   // de fato embaralhou
+
+    // Tocando tudo (Repetir Desligado): cada musica aparece uma vez e no fim pausa.
+    std::vector<size_t> played = {p.trackIndex()};
+    p.togglePlay();
+    for (int i = 0; i < 9; i++) {
+        run(p, now, 1000);
+        played.push_back(p.trackIndex());
+    }
+    CHECK_EQ(isPermutation(played, 10), true);
+    run(p, now, 1000);
+    CHECK_EQ(p.isPlaying(), false);
+
+    p.setShuffle(ShuffleMode::Off);
+    size_t cur = p.trackIndex();
+    p.next();
+    CHECK_EQ(p.trackIndex(), (cur + 1) % 10);  // voltou a ordem normal
+}
+
+static void testShuffleAllAndSource()
+{
+    std::printf("Aleatorio Geral e troca de playlist\n");
+    FakeCatalog cat;
+    FakeSource playlist({100, 100}, "Lista ", true);
+    FakeView view;
+    Player p(view);
+    uint32_t now = 0;
+    p.begin(playlist, now);
+
+    p.setShuffle(ShuffleMode::All, &cat.all);
+    CHECK_EQ(p.trackCount(), (size_t)6);       // passou para todas as musicas
+    CHECK_EQ(p.shuffle() == ShuffleMode::All, true);
+    CHECK_EQ(view.trackTitle, std::string("Geral 1"));   // a atual nao estava la: comecou outra
+
+    // Escolher uma playlist sai do Geral (vira aleatorio da playlist).
+    p.setSource(playlist, 1, true);
+    CHECK_EQ(p.trackCount(), (size_t)2);
+    CHECK_EQ(p.trackIndex(), (size_t)1);
+    CHECK_EQ(p.isPlaying(), true);
+    CHECK_EQ(p.shuffle() == ShuffleMode::Playlist, true);
+
+    // Geral mantendo a musica atual quando ela existe na lista geral.
+    p.setSource(cat.all, 3, false);
+    p.setShuffle(ShuffleMode::Off);
+    p.setShuffle(ShuffleMode::All, &cat.all);
+    CHECK_EQ(p.trackIndex(), (size_t)3);
+}
+
+// =============================================================================
 //  Menu
 // =============================================================================
 
 static void testMenuMain()
 {
-    std::printf("Menu: pagina principal, Repetir e Voltar\n");
-    FakeSource src({100, 100, 100});
+    std::printf("Menu: pagina principal, Aleatorio, Repetir e Voltar\n");
+    FakeSource src({100, 100, 100}, "Faixa ", true);
     FakeView view;
+    FakeCatalog cat;
+    FakeDevice dev;
     Player p(view);
-    Menu m(p, view);
+    Menu m(p, view, &cat, &dev);
     p.begin(src, 0);
 
     p.toggleVolumeMode();
@@ -264,24 +524,34 @@ static void testMenuMain()
     CHECK_EQ(view.mode == PlayerMode::Normal, true);   // abrir sai do modo Volume
     CHECK_EQ(view.menuOpen, true);
     CHECK_EQ(view.menuTitle, std::string("Menu"));
-    CHECK_EQ(view.menuRows.size(), (size_t)3);
-    CHECK_EQ(view.menuRows[0], std::string("Músicas"));
-    CHECK_EQ(view.menuRows[1], std::string("Repetir: Desligado"));
-    CHECK_EQ(view.menuRows[2], std::string("Voltar"));
+    std::vector<std::string> expected = {
+        "Músicas", "Playlists", "Aleatório: Desligado", "Repetir: Desligado",
+        "Favoritar música", "Configurações", "Voltar"
+    };
+    CHECK_EQ(view.menuRows, expected);
     CHECK_EQ(view.menuSelected, 0);
 
     m.rotate(-1);
-    CHECK_EQ(m.selected(), 2);                 // da a volta para o ultimo
+    CHECK_EQ(m.selected(), (int)Menu::ITEM_BACK);   // da a volta para o ultimo
 
-    m.rotate(-1);                              // Repetir
+    m.rotate(-3);                              // Repetir
     m.select();
-    CHECK_EQ(view.menuRows[1], std::string("Repetir: Todas"));
+    CHECK_EQ(view.menuRows[Menu::ITEM_REPEAT], std::string("Repetir: Todas"));
     m.select();
-    CHECK_EQ(view.menuRows[1], std::string("Repetir: Uma"));
+    CHECK_EQ(view.menuRows[Menu::ITEM_REPEAT], std::string("Repetir: Uma"));
     m.select();
-    CHECK_EQ(view.menuRows[1], std::string("Repetir: Desligado"));
+    CHECK_EQ(view.menuRows[Menu::ITEM_REPEAT], std::string("Repetir: Desligado"));
 
-    m.rotate(+1);                              // Voltar
+    m.rotate(-1);                              // Aleatorio
+    m.select();
+    CHECK_EQ(view.menuRows[Menu::ITEM_SHUFFLE], std::string("Aleatório: Playlist"));
+    m.select();
+    CHECK_EQ(view.menuRows[Menu::ITEM_SHUFFLE], std::string("Aleatório: Geral"));
+    CHECK_EQ(p.trackCount(), (size_t)6);       // Geral = todas as musicas do catalogo
+    m.select();
+    CHECK_EQ(view.menuRows[Menu::ITEM_SHUFFLE], std::string("Aleatório: Desligado"));
+
+    m.rotate(+4);                              // Voltar
     m.select();
     CHECK_EQ(m.isOpen(), false);
     CHECK_EQ(view.menuOpen, false);
@@ -294,7 +564,7 @@ static void testMenuTracks()
     FakeSource src(d);
     FakeView view;
     Player p(view);
-    Menu m(p, view);
+    Menu m(p, view, nullptr, nullptr);
     p.begin(src, 0);
     p.next(); p.next();                        // musica atual: indice 2
 
@@ -317,11 +587,10 @@ static void testMenuTracks()
 
     m.rotate(+1);                              // volta para o indice 0
     CHECK_EQ(m.selected(), 0);
-    CHECK_EQ(view.menuSelected, 0);
 
     m.back();                                  // volta para a pagina principal
     CHECK_EQ(m.page() == Menu::Page::Main, true);
-    CHECK_EQ(view.menuTitle, std::string("Menu"));
+    CHECK_EQ(m.selected(), (int)Menu::ITEM_TRACKS);
 
     m.select();                                // Musicas de novo
     m.rotate(+3);                              // indice 5
@@ -329,11 +598,103 @@ static void testMenuTracks()
     CHECK_EQ(p.trackIndex(), (size_t)5);
     CHECK_EQ(p.isPlaying(), true);
     CHECK_EQ(m.isOpen(), false);
-    CHECK_EQ(view.menuOpen, false);
 
     m.open();
     m.back();                                  // Anterior na pagina principal fecha
     CHECK_EQ(m.isOpen(), false);
+}
+
+static void testMenuPlaylists()
+{
+    std::printf("Menu: playlists e Favoritar\n");
+    FakeCatalog cat;
+    cat.names = {"Favoritas", "Treino", "Vazia"};
+    cat.lists = {FakeSource({100}, "Fav ", true), FakeSource({100, 100, 100}, "Treino ", true),
+                 FakeSource({}, "X ", true)};
+    FakeView view;
+    Player p(view);
+    Menu m(p, view, &cat, nullptr);
+    p.begin(cat.all, 0);
+
+    m.open();
+    m.rotate(+Menu::ITEM_PLAYLISTS);
+    m.select();
+    CHECK_EQ(m.page() == Menu::Page::Playlists, true);
+    std::vector<std::string> expected = {"Todas as músicas", "Favoritas", "Treino", "Vazia"};
+    CHECK_EQ(view.menuRows, expected);
+
+    m.rotate(+3);                              // Vazia
+    m.select();
+    CHECK_EQ(view.menuTitle, std::string("Playlist vazia"));
+    CHECK_EQ(m.isOpen(), true);
+
+    m.rotate(-1);                              // Treino
+    m.select();
+    CHECK_EQ(m.isOpen(), false);
+    CHECK_EQ(p.trackCount(), (size_t)3);
+    CHECK_EQ(view.trackTitle, std::string("Treino 1"));
+    CHECK_EQ(p.isPlaying(), true);
+
+    // Favoritar a musica atual (uma vez so).
+    m.open();
+    m.rotate(+Menu::ITEM_FAVORITE);
+    m.select();
+    CHECK_EQ(view.menuTitle, std::string("Adicionada às Favoritas"));
+    CHECK_EQ(cat.favorites.size(), (size_t)1);
+    CHECK_EQ(cat.favorites[0], std::string("/music/Treino 1.mp3"));
+    m.select();
+    CHECK_EQ(view.menuTitle, std::string("Já está nas Favoritas"));
+    m.rotate(+1);
+    CHECK_EQ(view.menuTitle, std::string("Menu"));   // aviso some na proxima acao
+
+    // Voltar da pagina Playlists cai no item Playlists.
+    m.rotate(-(Menu::ITEM_SETTINGS - Menu::ITEM_PLAYLISTS));
+    m.select();
+    m.back();
+    CHECK_EQ(m.selected(), (int)Menu::ITEM_PLAYLISTS);
+}
+
+static void testMenuSettings()
+{
+    std::printf("Menu: configuracoes - brilho e desligar\n");
+    FakeSource src({100});
+    FakeView view;
+    FakeDevice dev;
+    Player p(view);
+    Menu m(p, view, nullptr, &dev);
+    p.begin(src, 0);
+
+    m.open();
+    m.rotate(+Menu::ITEM_SETTINGS);
+    m.select();
+    CHECK_EQ(m.page() == Menu::Page::Settings, true);
+    std::vector<std::string> expected = {"Brilho: 80%", "Desligar", "Voltar"};
+    CHECK_EQ(view.menuRows, expected);
+
+    m.select();                                // entra na edicao do brilho
+    CHECK_EQ(m.isEditing(), true);
+    CHECK_EQ(view.menuRows[0], std::string("Brilho: < 80% >"));
+    m.rotate(-3);
+    CHECK_EQ(dev.level, 50);
+    m.rotate(-10);
+    CHECK_EQ(dev.level, DeviceControl::BRIGHTNESS_MIN);   // nunca apaga de vez
+    m.rotate(+20);
+    CHECK_EQ(dev.level, DeviceControl::BRIGHTNESS_MAX);
+    CHECK_EQ(m.selected(), 0);                 // a selecao nao andou durante a edicao
+    m.select();                                // confirma
+    CHECK_EQ(m.isEditing(), false);
+    CHECK_EQ(view.menuRows[0], std::string("Brilho: 100%"));
+
+    m.rotate(+1);                              // Desligar
+    m.select();
+    CHECK_EQ(dev.powerOffs, 1);
+    CHECK_EQ(m.isOpen(), false);
+
+    m.open();
+    m.rotate(+Menu::ITEM_SETTINGS);
+    m.select();
+    m.back();                                  // volta para Configuracoes no menu principal
+    CHECK_EQ(m.selected(), (int)Menu::ITEM_SETTINGS);
 }
 
 int main()
@@ -344,8 +705,15 @@ int main()
     testClock();
     testRepeatModes();
     testInvalidTrack();
+    testAudioPlayback();
+    testAudioSeek();
+    testAudioError();
+    testShuffle();
+    testShuffleAllAndSource();
     testMenuMain();
     testMenuTracks();
+    testMenuPlaylists();
+    testMenuSettings();
 
     std::printf(testFailures() ? "\n%d FALHA(S)\n" : "\nTodos os testes passaram.\n", testFailures());
     return testFailures() ? 1 : 0;

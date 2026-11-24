@@ -26,6 +26,10 @@ class TrackSource
         // Nome curto para listas (ex.: nome do arquivo sem extensao).
         virtual std::string name(size_t index) const = 0;
 
+        // Caminho do arquivo de audio. Vazio = musica sem arquivo (demo):
+        // o Player simula o tempo em vez de tocar.
+        virtual std::string path(size_t index) const { (void)index; return std::string(); }
+
         // Preenche titulo/artista/album/duracao. Campos que faltarem devem vir
         // preenchidos com um valor padrao. Retorna false se o arquivo for invalido.
         virtual bool load(size_t index, Mp3Info &info) const = 0;

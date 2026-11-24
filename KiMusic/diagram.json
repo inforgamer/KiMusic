@@ -59,7 +59,7 @@
     [ "lcd1:MOSI", "esp:11", "violet", [ "h-50", "v210", "h-390" ] ],
     [ "lcd1:SCK", "esp:12", "purple", [ "h-60", "v220", "h-390" ] ],
     [ "lcd1:VCC", "esp:3V3", "red", [ "h-70", "v-80", "h-390" ] ],
-    [ "lcd1:LED", "esp:3V3", "red", [ "h-80", "v-90", "h-390" ] ],
+    [ "lcd1:LED", "esp:21", "orange", [ "h-80", "v-90", "h-390" ] ],
     [ "lcd1:GND", "esp:GND.1", "black", [ "h-90", "v-100", "h-390" ] ],
     [ "sd1:CS", "esp:15", "orange", [ "h-20", "v-130" ] ],
     [ "sd1:SCK", "esp:12", "blue", [ "h-30", "v-140" ] ],

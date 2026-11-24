@@ -1,7 +1,7 @@
 // =============================================================================
-//  storage/Library.cpp  -  Implementacao (ver Library.hpp)
+//  storage/TrackList.cpp  -  Implementacao (ver TrackList.hpp)
 // =============================================================================
-#include "storage/Library.hpp"
+#include "storage/TrackList.hpp"
 #include "storage/FileReader.hpp"
 #include "CoverDecoder.hpp"
 
@@ -16,33 +16,31 @@ bool isMp3(const String &fileName)
     return lower.endsWith(".mp3") && !lower.startsWith(".");   // ignora "._arquivo" do macOS
 }
 
-// "/music/Faixa 01.mp3" -> "Faixa 01"
-String baseName(const String &path)
+} // namespace
+
+TrackList::TrackList(fs::FS &f, const char *cover) : fs(f), coverFolder(cover) {}
+
+String TrackList::baseName(const String &path)
 {
     String fileName = path.substring(path.lastIndexOf('/') + 1);
     int dot = fileName.lastIndexOf('.');
     return dot > 0 ? fileName.substring(0, dot) : fileName;
 }
 
-} // namespace
-
-Library::Library(fs::FS &f, const char *music, const char *cover)
-    : fs(f), musicFolder(music), coverFolder(cover) {}
-
 // -----------------------------------------------------------------------------
-//  Lista de musicas
+//  Montar a lista
 // -----------------------------------------------------------------------------
 
-size_t Library::scan()
+size_t TrackList::scanFolder(const char *folder)
 {
     paths.clear();
 
-    File dir = fs.open(musicFolder);
+    File dir = fs.open(folder);
     if (!dir || !dir.isDirectory()) {
         return 0;
     }
 
-    String base = musicFolder;
+    String base = folder;
     if (!base.endsWith("/")) {
         base += "/";
     }
@@ -67,16 +65,29 @@ size_t Library::scan()
     return paths.size();
 }
 
-std::string Library::name(size_t index) const
+void TrackList::setPaths(std::vector<String> &&newPaths)
+{
+    paths = std::move(newPaths);
+    if (paths.size() > MAX_TRACKS) {
+        paths.resize(MAX_TRACKS);
+    }
+}
+
+std::string TrackList::name(size_t index) const
 {
     return index < paths.size() ? std::string(baseName(paths[index]).c_str()) : std::string();
+}
+
+std::string TrackList::path(size_t index) const
+{
+    return index < paths.size() ? std::string(paths[index].c_str()) : std::string();
 }
 
 // -----------------------------------------------------------------------------
 //  Dados de uma musica
 // -----------------------------------------------------------------------------
 
-bool Library::load(size_t index, Mp3Info &info) const
+bool TrackList::load(size_t index, Mp3Info &info) const
 {
     info = Mp3Info();
     if (index >= paths.size()) {
@@ -102,7 +113,7 @@ bool Library::load(size_t index, Mp3Info &info) const
 //  Capa
 // -----------------------------------------------------------------------------
 
-bool Library::loadCover(size_t index, const Mp3Info &info, uint16_t *out) const
+bool TrackList::loadCover(size_t index, const Mp3Info &info, uint16_t *out) const
 {
     if (index >= paths.size()) {
         return false;
@@ -119,7 +130,7 @@ bool Library::loadCover(size_t index, const Mp3Info &info, uint16_t *out) const
     return fs.exists(coverPath) && decodeCoverFile(coverPath, 0, 0, out);
 }
 
-bool Library::decodeCoverFile(const String &path, uint32_t offset, uint32_t size, uint16_t *out) const
+bool TrackList::decodeCoverFile(const String &path, uint32_t offset, uint32_t size, uint16_t *out) const
 {
     File file = fs.open(path);
     if (!file) {
