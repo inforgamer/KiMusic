@@ -1,6 +1,6 @@
 # 🎵 KiMusic
 
-> Um MP3 Player *bare-metal* desenvolvido do zero utilizando Raspberry Pi Pico e C++.
+> Um MP3 Player *bare-metal* desenvolvido do zero utilizando ESP32-S3 e C++.
 
 O **KiMusic** é um projeto pessoal focado na construção de um MP3 Player portátil 100% offline. O projeto une engenharia de hardware e desenvolvimento de software para entregar uma experiência de áudio customizada, servindo como um laboratório prático para o estudo de sistemas embarcados.
 
@@ -22,16 +22,22 @@ Acesse os links abaixo para entender os bastidores do projeto:
 O coração do projeto roda em **C++**, focando em controle de baixo nível e performance.
 
 **Stack e Ferramentas:**
-* C++ / CMake
+* C++ / Arduino framework
+* PlatformIO
+* LVGL 8.3 + SquareLine Studio (Interface)
+* TFT_eSPI (Driver do display)
 * VS Code & Wokwi (Simulação)
 * Git / GitHub
 
 **Hardware Principal:**
-* Microcontrolador: **Raspberry Pi Pico (RP2040)**
-* Interface Visual: **Display ILI9341 / OLED**
-* Navegação: **Rotary Encoder**
+* Microcontrolador: **ESP32-S3 (DevKitC-1)**
+* Interface Visual: **Display ILI9341 (320x240)**
+* Navegação: **Rotary Encoder + 4 botões**
+* Feedback: **Buzzer**
 * Armazenamento: **Módulo de Cartão SD**
 * Saída: **DAC de Áudio e conexão P2**
+
+A pinagem completa está em [`KiMusic/Documentação/Pinagem.md`](KiMusic/Documentação/Pinagem.md).
 
 ---
 

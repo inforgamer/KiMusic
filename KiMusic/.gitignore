@@ -1,2 +1,13 @@
 build
+
+# Build e bibliotecas baixadas pelo PlatformIO
+.pio/
+
+# Arquivos gerados automaticamente pelo SquareLine Studio
+src/UI/backup/
+src/UI/cache/
+
+# Executaveis dos testes no PC
+test/host/*.exe
+
 !.vscode/*

@@ -1,57 +1,57 @@
 #ifndef SCREEN_HPP
 #define SCREEN_HPP
 
-#include "conceito02.h"
-#include "conceito01.h"
-#include "p3.h"
-#include "p5.h"
-
+#include <Arduino.h>
 #include <TFT_eSPI.h>
+#include <lvgl.h>
 
-class Screen{
+extern "C" {
+    #include "UI/ui.h"
+}
+
+// O que o encoder controla no momento.
+enum class PlayerMode
+{
+    Normal,
+    Volume,
+    Position
+};
+
+// Camada entre o firmware e a interface gerada pelo SquareLine Studio.
+// Todo acesso aos objetos ui_* deve passar por esta classe.
+class Screen
+{
     private:
-    TFT_eSPI tft = TFT_eSPI();
+        static constexpr int WIDTH = 320;
+        static constexpr int HEIGHT = 240;
+        static constexpr int BUFFER_LINES = 20;
+
+        TFT_eSPI tft = TFT_eSPI();
+
+        lv_disp_draw_buf_t drawBuffer;
+        lv_disp_drv_t displayDriver;
+        lv_color_t buffer[WIDTH * BUFFER_LINES];
+
+        uint32_t lastTick = 0;
+
+        static void flushDisplay(
+            lv_disp_drv_t *disp,
+            const lv_area_t *area,
+            lv_color_t *color
+        );
+
+        static void formatTime(char *out, size_t size, uint32_t seconds);
+        static void toDisplayText(const char *utf8, char *out, size_t size);
+        static void setHighlight(lv_obj_t *obj, bool on);
 
     public:
-        Screen() {}
-        
-        void init() 
-        {
-            tft.init();
-            tft.setRotation(1);
-            tft.setSwapBytes(true);
-        tft.pushImage(0, 0, 320, 240, Conceito02);
-        /*     
-        tft.fillScreen(TFT_WHITE);
+        void init();
+        void update();
 
-              //marcações
-            tft.drawLine(10,0,10,30,TFT_BLACK);
-            tft.drawFastHLine(0,120,320,TFT_BLACK);
-            tft.drawFastVLine(160,0,240,TFT_BLACK);
-            tft.drawFastVLine(10,140,18,TFT_GREEN);
-            tft.drawFastVLine(10,158,10,TFT_BLUE);
-            tft.drawFastVLine(10,168,35,TFT_RED);
-            
-            
-
-
-
-            tft.fillCircle(110,84.5,50,TFT_BLUE);
-            tft.fillRect(10,30,110,110,TFT_RED);
-
-
-            tft.setCursor(10,150);
-            tft.setTextColor(TFT_BLACK, TFT_WHITE);
-            tft.setTextSize(1);
-            tft.print("Nome da Musica");
-
-            tft.setCursor(10,165);
-            tft.setTextColor(TFT_BLACK, TFT_WHITE);
-            tft.setTextSize(1);
-            tft.print("Cantor");
-    */
-        }
-
+        void setMusicInfo(const char *title, const char *artist, const char *album);
+        void setVolume(int volume);
+        void setProgress(uint32_t elapsed, uint32_t duration);
+        void setStatus(bool playing, PlayerMode mode);
 };
 
 #endif

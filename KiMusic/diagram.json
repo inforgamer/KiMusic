@@ -82,8 +82,6 @@
     [ "btn_left:2.l", "esp:GND.1", "black", [ "v50", "h-460", "v-190" ] ],
     [ "btn_right:1.l", "esp:8", "gray", [ "v80", "h-680", "v-200" ] ],
     [ "btn_right:2.l", "esp:GND.1", "black", [ "v90", "h-690", "v-190" ] ],
-    [ "lcd1:VCC", "esp:3V3.1", "red", [ "h-79.6", "v-104.3", "h-326.4", "v124.8" ] ],
-    [ "lcd1:LED", "esp:3V3.2", "red", [ "h-96", "v-144.01", "h-316.8", "v105.6" ] ],
     [ "lcd1:MISO", "esp:13", "green", [ "h-105.6", "v-144.01", "h-326.4", "v249.6" ] ]
   ],
   "dependencies": {}
