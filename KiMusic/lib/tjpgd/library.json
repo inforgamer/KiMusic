@@ -1,0 +1,7 @@
+{
+  "name": "tjpgd",
+  "version": "0.3.0",
+  "description": "TJpgDec R0.03 (C)ChaN - copia sem dependencia do LVGL, usada para decodificar capas",
+  "frameworks": "*",
+  "platforms": "*"
+}

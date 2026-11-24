@@ -41,6 +41,71 @@ A pinagem completa está em [`KiMusic/Documentação/Pinagem.md`](KiMusic/Docume
 
 ---
 
+## 🎮 Controles
+
+| Botão | Menu fechado | Menu aberto |
+| :--- | :--- | :--- |
+| **Encoder (girar)** | Volume ou posição, conforme o modo | Move a seleção |
+| **Central (clique)** | Play / Pause | Escolhe o item |
+| **Central (segurar 3 s)** | Abre o menu | Fecha o menu |
+| **Vol** (cima) | Liga/desliga o modo Volume (mostra a barra) | — |
+| **Pos** (baixo) | Liga/desliga o modo Posição (5 s por passo) | — |
+| **Prev** (esquerda) | Volta ao início da música; se ela acabou de começar, vai para a anterior | Volta uma página / fecha |
+| **Next** (direita) | Próxima música | — |
+
+### Menu
+
+```
+Menu
+ ├─ Músicas ............. lista todas as músicas do SD; escolher uma começa a tocá-la
+ ├─ Repetir: <modo> ..... Desligado → Todas → Uma
+ └─ Voltar .............. fecha o menu
+```
+
+* **Desligado:** no fim da playlist volta para a primeira música e pausa.
+* **Todas:** no fim da playlist volta para a primeira e continua tocando.
+* **Uma:** repete a música atual.
+
+### Cartão SD
+
+```
+/music/*.mp3              músicas (ordem alfabética, até 200)
+/cover/<nome da música>.jpg  capa, se o MP3 não tiver uma embutida
+```
+
+---
+
+## 🗂️ Estrutura do Código
+
+```
+KiMusic/
+├─ src/
+│  ├─ main.cpp      setup()/loop(): cria e liga os módulos
+│  ├─ App           lê os botões e chama Player/Menu
+│  ├─ Config.hpp    pinagem e constantes
+│  ├─ core/         regras do player e do menu (sem Arduino, testadas no PC)
+│  ├─ input/        Encoder, Button (clique e pressão longa), Buzzer
+│  ├─ storage/      Library (músicas do SD) e DemoSource (sem SD)
+│  ├─ view/         Screen (LVGL) e ScreenView (liga o núcleo à tela)
+│  └─ UI/           gerado pelo SquareLine Studio — não editar à mão
+├─ lib/
+│  ├─ media/        Mp3Info (tags/duração) e CoverDecoder (capa JPEG)
+│  └─ tjpgd/        decodificador JPEG (ChaN)
+└─ test/host/       testes no PC
+```
+
+Fluxo: **botões → App → Player/Menu → ScreenView → Screen**
+
+### Testes no PC
+
+Precisa do `g++` (MinGW-w64). Na pasta `KiMusic`:
+
+```powershell
+powershell -File test/host/run_tests.ps1
+```
+
+---
+
 ## 📌 Foco Atual de Desenvolvimento
 
 > **Objetivo da Sprint:** Fazer o display funcionar perfeitamente e implementar a lógica matemática de navegação do menu principal e avanço de tempo utilizando o Rotary Encoder em C++. 

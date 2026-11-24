@@ -1,4 +1,11 @@
-#include "Screen.hpp"
+// =============================================================================
+//  view/Screen.cpp  -  Implementacao (ver Screen.hpp)
+// =============================================================================
+#include "view/Screen.hpp"
+
+// -----------------------------------------------------------------------------
+//  Driver do display: o LVGL chama flushDisplay com um retangulo pronto.
+// -----------------------------------------------------------------------------
 
 void Screen::flushDisplay(
     lv_disp_drv_t *disp,
@@ -103,7 +110,100 @@ void Screen::init()
 
     lv_obj_add_flag(ui_volume, LV_OBJ_FLAG_HIDDEN);   // aparece so no modo volume
 
+    createCover();
+    createMenu();
+
     lastTick = millis();
+}
+
+void Screen::createCover()
+{
+    // Icone de nota musical enquanto nao ha capa.
+    coverPlaceholder = lv_label_create(ui_AlbumCover);
+    lv_label_set_text(coverPlaceholder, LV_SYMBOL_AUDIO);
+    lv_obj_set_style_text_font(coverPlaceholder, &lv_font_montserrat_18, LV_PART_MAIN);
+    lv_obj_center(coverPlaceholder);
+
+    memset(&coverImage, 0, sizeof(coverImage));
+    coverImage.header.cf = LV_IMG_CF_TRUE_COLOR;
+    coverImage.header.w = CoverDecoder::COVER_SIZE;
+    coverImage.header.h = CoverDecoder::COVER_SIZE;
+    coverImage.data_size = sizeof(coverPixels);
+    coverImage.data = reinterpret_cast<const uint8_t *>(coverPixels);
+
+    // A imagem fica no mesmo lugar de ui_AlbumCover, por cima dele.
+    coverObj = lv_img_create(ui_Center);
+    lv_img_set_src(coverObj, &coverImage);
+    lv_obj_set_align(coverObj, LV_ALIGN_CENTER);
+    lv_obj_set_pos(coverObj, lv_obj_get_x_aligned(ui_AlbumCover), lv_obj_get_y_aligned(ui_AlbumCover));
+    lv_obj_add_flag(coverObj, LV_OBJ_FLAG_HIDDEN);
+}
+
+void Screen::showCover(bool visible)
+{
+    if (visible) {
+        lv_img_cache_invalidate_src(&coverImage);   // o conteudo do buffer mudou
+        lv_obj_clear_flag(coverObj, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_invalidate(coverObj);
+    } else {
+        lv_obj_add_flag(coverObj, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+void Screen::createMenu()
+{
+    menuPanel = lv_obj_create(lv_layer_top());
+    lv_obj_set_size(menuPanel, 240, 196);
+    lv_obj_center(menuPanel);
+    lv_obj_set_style_pad_all(menuPanel, 6, LV_PART_MAIN);
+    lv_obj_set_style_pad_row(menuPanel, 2, LV_PART_MAIN);
+    lv_obj_set_flex_flow(menuPanel, LV_FLEX_FLOW_COLUMN);
+    lv_obj_clear_flag(menuPanel, LV_OBJ_FLAG_SCROLLABLE);
+
+    menuTitle = lv_label_create(menuPanel);
+    lv_obj_set_width(menuTitle, lv_pct(100));
+    lv_obj_set_style_text_font(menuTitle, &lv_font_montserrat_16, LV_PART_MAIN);
+    lv_obj_set_style_text_align(menuTitle, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
+
+    for (int i = 0; i < MENU_ROWS; i++) {
+        lv_obj_t *row = lv_label_create(menuPanel);
+        lv_obj_set_width(row, lv_pct(100));
+        lv_label_set_long_mode(row, LV_LABEL_LONG_DOT);
+        lv_obj_set_style_pad_hor(row, 6, LV_PART_MAIN);
+        lv_obj_set_style_pad_ver(row, 2, LV_PART_MAIN);
+        lv_obj_set_style_radius(row, 4, LV_PART_MAIN);
+        lv_obj_set_style_bg_color(row, lv_palette_main(LV_PALETTE_BLUE), LV_PART_MAIN);
+        menuRows[i] = row;
+    }
+
+    lv_obj_add_flag(menuPanel, LV_OBJ_FLAG_HIDDEN);
+}
+
+void Screen::showMenu(const char *title, const char *const *rows, int count, int selected)
+{
+    char text[64];
+
+    toDisplayText(title, text, sizeof(text));
+    lv_label_set_text(menuTitle, text);
+
+    for (int i = 0; i < MENU_ROWS; i++) {
+        lv_obj_t *row = menuRows[i];
+        if (i >= count) {
+            lv_obj_add_flag(row, LV_OBJ_FLAG_HIDDEN);
+            continue;
+        }
+        toDisplayText(rows[i], text, sizeof(text));
+        lv_label_set_text(row, text);
+        lv_obj_set_style_bg_opa(row, i == selected ? LV_OPA_COVER : LV_OPA_TRANSP, LV_PART_MAIN);
+        lv_obj_clear_flag(row, LV_OBJ_FLAG_HIDDEN);
+    }
+
+    lv_obj_clear_flag(menuPanel, LV_OBJ_FLAG_HIDDEN);
+}
+
+void Screen::hideMenu()
+{
+    lv_obj_add_flag(menuPanel, LV_OBJ_FLAG_HIDDEN);
 }
 
 void Screen::update()

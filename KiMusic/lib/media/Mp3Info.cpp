@@ -1,3 +1,11 @@
+// =============================================================================
+//  Mp3Info.cpp  -  Implementacao do leitor de metadados (ver Mp3Info.hpp)
+// -----------------------------------------------------------------------------
+//  Ordem de leitura:
+//    1. Tag ID3v2 no inicio do arquivo (texto, TLEN e capa APIC/PIC)
+//    2. Tag ID3v1 nos ultimos 128 bytes (so preenche campos vazios)
+//    3. Primeiro frame MPEG de audio -> duracao (TLEN > Xing/Info > VBRI > CBR)
+// =============================================================================
 #include "Mp3Info.hpp"
 
 #include <stdlib.h>
@@ -107,6 +115,60 @@ std::string decodeText(const uint8_t *b, size_t len)
     }
 }
 
+// Frame de imagem:
+//   v2.3/v2.4 APIC: codificacao, MIME\0, tipo, descricao\0, dados
+//   v2.2 PIC:       codificacao, formato (3 letras), tipo, descricao\0, dados
+// Prefere a capa frontal (tipo 3) quando ha mais de uma imagem.
+void readPicture(ByteReader &r, uint32_t pos, uint32_t size, int version, Mp3Info &out, bool &haveFront)
+{
+    uint8_t head[MAX_TEXT_FRAME];
+    size_t len = size < sizeof(head) ? size : sizeof(head);
+    if (len < 4 || !r.readAt(pos, head, len)) {
+        return;
+    }
+
+    uint8_t encoding = head[0];
+    size_t i = 1;
+
+    if (version == 2) {
+        i += 3;
+    } else {
+        while (i < len && head[i] != 0) i++;   // MIME
+        i++;
+    }
+    if (i >= len) return;
+
+    uint8_t pictureType = head[i++];
+
+    // Descricao: termina em 00 (Latin-1/UTF-8) ou 00 00 alinhado (UTF-16).
+    bool wide = (encoding == 1 || encoding == 2);
+    if (wide) {
+        while (i + 1 < len && !(head[i] == 0 && head[i + 1] == 0)) i += 2;
+        i += 2;
+    } else {
+        while (i < len && head[i] != 0) i++;
+        i++;
+    }
+    if (i + 4 > len || i >= size) return;
+
+    bool front = (pictureType == 3);
+    if (out.coverFormat != CoverFormat::None && (haveFront || !front)) {
+        return;   // ja temos uma imagem melhor ou igual
+    }
+
+    const uint8_t *data = head + i;
+    if (data[0] == 0xFF && data[1] == 0xD8) {
+        out.coverFormat = CoverFormat::Jpeg;
+    } else if (data[0] == 0x89 && data[1] == 'P' && data[2] == 'N' && data[3] == 'G') {
+        out.coverFormat = CoverFormat::Png;
+    } else {
+        out.coverFormat = CoverFormat::Other;
+    }
+    out.coverOffset = pos + (uint32_t)i;
+    out.coverSize = size - (uint32_t)i;
+    haveFront = front;
+}
+
 // Le a tag ID3v2. Retorna o offset onde o audio comeca (0 se nao houver tag).
 uint32_t readId3v2(ByteReader &r, Mp3Info &out, uint32_t &tlenMs)
 {
@@ -137,6 +199,7 @@ uint32_t readId3v2(ByteReader &r, Mp3Info &out, uint32_t &tlenMs)
     const size_t headerLen = (version == 2) ? 6 : 10;
     uint8_t fh[10];
     uint8_t data[MAX_TEXT_FRAME];
+    bool haveFront = false;
 
     while (pos + headerLen <= end) {
         if (!r.readAt(pos, fh, headerLen) || fh[0] == 0) {
@@ -168,8 +231,9 @@ uint32_t readId3v2(ByteReader &r, Mp3Info &out, uint32_t &tlenMs)
         else if (!strcmp(id, "TPE1") || !strcmp(id, "TP1")) target = &out.artist;
         else if (!strcmp(id, "TALB") || !strcmp(id, "TAL")) target = &out.album;
         else if (!strcmp(id, "TLEN") || !strcmp(id, "TLE")) isLength = true;
+        bool isPicture = !strcmp(id, "APIC") || !strcmp(id, "PIC");
 
-        if (!target && !isLength) {
+        if (!target && !isLength && !isPicture) {
             continue;
         }
 
@@ -181,6 +245,11 @@ uint32_t readId3v2(ByteReader &r, Mp3Info &out, uint32_t &tlenMs)
         if (version == 4 && (frameFlags & 0x0001)) {   // data length indicator
             dataPos += 4;
             size = (size > 4) ? size - 4 : 0;
+        }
+
+        if (isPicture) {
+            readPicture(r, dataPos, size, version, out, haveFront);
+            continue;
         }
 
         size_t len = size < MAX_TEXT_FRAME ? size : MAX_TEXT_FRAME;

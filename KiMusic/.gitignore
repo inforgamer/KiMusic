@@ -9,5 +9,7 @@ src/UI/cache/
 
 # Executaveis dos testes no PC
 test/host/*.exe
+test/host/*.o
+test/host/*.bmp
 
 !.vscode/*

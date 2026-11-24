@@ -1,0 +1,10 @@
+{
+  "name": "media",
+  "version": "1.0.0",
+  "description": "KiMusic: leitura de tags/duracao de MP3 e decodificacao de capas JPEG (sem dependencia do Arduino)",
+  "frameworks": "*",
+  "platforms": "*",
+  "dependencies": {
+    "tjpgd": "*"
+  }
+}
