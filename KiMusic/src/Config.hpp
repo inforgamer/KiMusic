@@ -24,7 +24,6 @@ namespace Config
     constexpr uint8_t PIN_NEXT      = 8;    // direita  (amarelo)
 
     // ---- Outros ----
-    constexpr uint8_t PIN_BUZZER    = 4;
     constexpr uint8_t PIN_SD_CS     = 15;   // SD divide o SPI com o display
     constexpr uint8_t PIN_BACKLIGHT = 21;   // LED do display (PWM = brilho)
 
@@ -41,7 +40,7 @@ namespace Config
 
     // ---- Diversos ----
     constexpr uint32_t SERIAL_BAUD  = 115200;
-    constexpr uint8_t BACKLIGHT_LEDC_CHANNEL = 7;  // canal 0 e usado pelo tone() do buzzer
+    constexpr uint8_t BACKLIGHT_LEDC_CHANNEL = 7;  // canal PWM (LEDC) da luz de fundo
 
     // ---- Cartao SD ----
     constexpr const char *MUSIC_FOLDER    = "/music";      // MP3 tocados (nao recursivo)

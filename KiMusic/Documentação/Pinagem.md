@@ -45,16 +45,7 @@
 
 ---
 
-## 🔊 4. Buzzer
-
-| Pino do Buzzer | Pino no ESP32-S3 |
-| :--- | :--- |
-| **Pino Positivo (+)** | 4 |
-| **Pino Negativo (-)** | GND |
-
----
-
-## 🎛️ 5. Os 4 Botões (Cruz Direcional)
+## 🎛️ 4. Os 4 Botões (Cruz Direcional)
 
 | Botão | Função Planejada | Pino no ESP32-S3 |
 | :--- | :--- | :--- |
@@ -65,7 +56,7 @@
 
 ---
 
-## 🎧 6. DAC PCM5102A (saída de áudio I2S → P2)
+## 🎧 5. DAC PCM5102A (saída de áudio I2S → P2)
 
 | Pino do PCM5102A | Ligação |
 | :--- | :--- |
@@ -87,7 +78,7 @@
 
 ---
 
-## ⏻ 7. Ligar / Desligar
+## ⏻ 6. Ligar / Desligar
 
 Não há botão de energia separado.
 
@@ -104,4 +95,4 @@ Não há botão de energia separado.
 
 ## 📌 GPIOs livres
 
-1, 2, 38, 47 e 48 (o 48 é o LED RGB da DevKitC). Evite 0, 3, 45 e 46 (pinos de boot) e 19/20 (USB).
+1, 2, 4, 38, 47 e 48 (o 48 é o LED RGB da DevKitC). Evite 0, 3, 45 e 46 (pinos de boot) e 19/20 (USB).

@@ -6,13 +6,6 @@
     { "type": "board-esp32-s3-devkitc-1", "id": "esp", "top": -50, "left": -350, "attrs": {} },
     { "type": "wokwi-microsd-card", "id": "sd1", "top": 200, "left": -350, "attrs": {} },
     {
-      "type": "wokwi-buzzer",
-      "id": "bz1",
-      "top": 300,
-      "left": -350,
-      "attrs": { "volume": "0.1" }
-    },
-    {
       "type": "wokwi-ili9341",
       "id": "lcd1",
       "top": -148.7,
@@ -72,8 +65,6 @@
     [ "encoder1:DT", "esp:7", "green", [ "v50", "h-570", "v-220" ] ],
     [ "encoder1:VCC", "esp:3V3", "red", [ "v60", "h-580", "v-350" ] ],
     [ "encoder1:GND", "esp:GND.1", "black", [ "v70", "h-590", "v-340" ] ],
-    [ "bz1:2", "esp:4", "red", [ "h-80", "v-260" ] ],
-    [ "bz1:1", "esp:GND.1", "black", [ "h-90", "v-250" ] ],
     [ "btn_up:1.l", "esp:16", "gray", [ "h-20", "v-20", "h-550" ] ],
     [ "btn_up:2.l", "esp:GND.1", "black", [ "h-30", "v-30", "h-560" ] ],
     [ "btn_down:1.l", "esp:17", "gray", [ "h-20", "v20", "h-570" ] ],

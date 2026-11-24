@@ -34,7 +34,6 @@ O coração do projeto roda em **C++**, focando em controle de baixo nível e pe
 * Microcontrolador: **ESP32-S3 (DevKitC-1)**
 * Interface Visual: **Display ILI9341 (320x240)**
 * Navegação: **Rotary Encoder + 4 botões**
-* Feedback: **Buzzer**
 * Armazenamento: **Módulo de Cartão SD**
 * Saída: **DAC PCM5102A (I2S) e conexão P2**
 
@@ -106,7 +105,7 @@ KiMusic/
 │  ├─ App           lê os botões e chama Player/Menu/Device
 │  ├─ Config.hpp    pinagem e constantes
 │  ├─ core/         regras do player e do menu (sem Arduino, testadas no PC)
-│  ├─ input/        Encoder, Button (clique e pressão longa), Buzzer
+│  ├─ input/        Encoder, Button (clique e pressão longa)
 │  ├─ storage/      TrackList, SdCatalog (músicas e playlists do SD), DemoSource
 │  ├─ system/       AudioEngine (MP3 → PCM5102A), Device (brilho/ajustes), Power
 │  ├─ view/         Screen (LVGL) e ScreenView (liga o núcleo à tela)

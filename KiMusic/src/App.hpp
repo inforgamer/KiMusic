@@ -23,7 +23,7 @@
 //  Desligar e so pelo menu (Configuracoes > Desligar). Para ligar: segurar o
 //  central 2 s (ver system/Power).
 //
-//  Toda a logica fica em Player, Menu e Device; aqui so ha o roteamento e os bipes.
+//  Toda a logica fica em Player, Menu e Device; aqui so ha o roteamento.
 // =============================================================================
 #ifndef APP_HPP
 #define APP_HPP
@@ -33,7 +33,6 @@
 #include "core/DeviceControl.hpp"
 #include "input/Encoder.hpp"
 #include "input/Button.hpp"
-#include "input/Buzzer.hpp"
 
 class App
 {
@@ -54,7 +53,6 @@ class App
         Button nextButton;
         Button volumeButton;
         Button positionButton;
-        Buzzer buzzer;
 
         // Leituras de uma volta do loop (todos os botoes sao lidos sempre,
         // para o debounce de cada um continuar correto).

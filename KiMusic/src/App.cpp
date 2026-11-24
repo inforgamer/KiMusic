@@ -13,8 +13,7 @@ App::App(Player &p, Menu &m, DeviceControl &d)
       previousButton(Config::PIN_PREVIOUS),
       nextButton(Config::PIN_NEXT),
       volumeButton(Config::PIN_VOLUME),
-      positionButton(Config::PIN_POSITION),
-      buzzer(Config::PIN_BUZZER) {}
+      positionButton(Config::PIN_POSITION) {}
 
 void App::begin()
 {
@@ -24,7 +23,6 @@ void App::begin()
     nextButton.begin();
     volumeButton.begin();
     positionButton.begin();
-    buzzer.begin();
 }
 
 void App::poll(uint32_t nowMs)
@@ -68,13 +66,10 @@ void App::handleMenu(const Input &in)
     }
 
     if (in.center == ButtonEvent::LongPress) {
-        buzzer.longClick();
         menu.close();
     } else if (in.center == ButtonEvent::Click) {
-        buzzer.click();
         menu.select();
     } else if (in.previous) {
-        buzzer.click();
         menu.back();
     }
     // Vol, Pos e Next nao fazem nada com o menu aberto.
@@ -91,19 +86,17 @@ void App::handlePlayer(const Input &in)
     }
 
     if (in.center == ButtonEvent::LongPress) {
-        buzzer.longClick();
         menu.open();
         return;   // o resto desta volta e ignorado
     }
 
     if (in.center == ButtonEvent::Click) {
-        buzzer.click();
         player.togglePlay();
     }
 
-    // Cada comando devolve false quando e ignorado pelo modo atual: sem bipe.
-    if (in.position && player.togglePositionMode()) buzzer.click();
-    if (in.volume   && player.toggleVolumeMode())   buzzer.click();
-    if (in.previous && player.previous())           buzzer.click();
-    if (in.next     && player.next())               buzzer.click();
+    // Os comandos que nao valem no modo atual sao ignorados pelo proprio Player.
+    if (in.position) player.togglePositionMode();
+    if (in.volume)   player.toggleVolumeMode();
+    if (in.previous) player.previous();
+    if (in.next)     player.next();
 }

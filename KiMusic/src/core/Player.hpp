@@ -54,7 +54,7 @@ class Player
 
         // ---- Comandos ----
         // Os que retornam bool devolvem false quando o comando foi ignorado
-        // (ex.: Proxima com o modo volume ativo), para o App nao apitar.
+        // (ex.: Proxima com o modo volume ativo).
 
         void togglePlay();
         bool next();                     // so no modo Normal

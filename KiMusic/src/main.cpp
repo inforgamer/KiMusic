@@ -3,7 +3,7 @@
 // -----------------------------------------------------------------------------
 //  Ponto de entrada: so cria os modulos, liga uns aos outros e roda o loop.
 //
-//    input/    Encoder, Button, Buzzer               (hardware de entrada)
+//    input/    Encoder, Button                       (hardware de entrada)
 //    core/     Player, Menu + interfaces             (regras, sem Arduino, testadas no PC)
 //    storage/  TrackList, SdCatalog, DemoSource      (musicas e playlists do SD)
 //    system/   AudioEngine, Device, Power            (som, brilho, ajustes, ligar/desligar)
