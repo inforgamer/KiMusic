@@ -50,8 +50,6 @@ struct Mp3Info
     // ao mudar a posicao (exato em CBR, aproximado em VBR).
     uint32_t audioOffset = 0;
     uint32_t audioBytes = 0;
-    uint32_t sampleRate = 0;    // Hz do primeiro frame
-    uint32_t bitrate = 0;       // kbps do primeiro frame
 
     // Byte do arquivo correspondente a 'seconds' (para salto de posicao).
     uint32_t offsetForSecond(uint32_t seconds) const

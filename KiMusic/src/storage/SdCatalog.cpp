@@ -34,18 +34,17 @@ void SdCatalog::scanPlaylists()
         return;
     }
 
-    File entry = dir.openNextFile();
-    while (entry && playlistFiles.size() < MAX_PLAYLISTS) {
-        String fileName = entry.name();
-        fileName = fileName.substring(fileName.lastIndexOf('/') + 1);
+    bool isDir = false;   // so o nome, sem abrir cada arquivo (ver TrackList::scanFolder)
+    for (String entry = dir.getNextFileName(&isDir);
+         entry.length() > 0 && playlistFiles.size() < MAX_PLAYLISTS;
+         entry = dir.getNextFileName(&isDir)) {
+        String fileName = entry.substring(entry.lastIndexOf('/') + 1);
         String lower = fileName;
         lower.toLowerCase();
-        if (!entry.isDirectory() && !lower.startsWith(".") &&
+        if (!isDir && !lower.startsWith(".") &&
             (lower.endsWith(".m3u") || lower.endsWith(".m3u8"))) {
             playlistFiles.push_back(playlistFolder + "/" + fileName);
         }
-        entry.close();
-        entry = dir.openNextFile();
     }
     dir.close();
 
@@ -122,6 +121,11 @@ bool SdCatalog::readPlaylist(const String &m3uPath, std::vector<String> &out) co
 // Caminho ja normalizado (m3uLineToPath) -> arquivo que existe no SD ("" se nao achar).
 String SdCatalog::resolve(const String &normalized) const
 {
+    // Ja aponta para a pasta de musicas: aceita sem buscar no SD (cada exists() le a
+    // pasta inteira). Se o arquivo nao existir, o Player pula a musica ao tocar.
+    if (normalized.startsWith(musicFolder + "/")) {
+        return normalized;
+    }
     if (fs.exists(normalized)) {
         return normalized;
     }

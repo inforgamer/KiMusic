@@ -53,7 +53,7 @@ static bool initSD()
     pinMode(TFT_CS, OUTPUT);
     digitalWrite(TFT_CS, HIGH);
 
-    if (!SD.begin(Config::PIN_SD_CS, SPI)) {
+    if (!SD.begin(Config::PIN_SD_CS, SPI, Config::SD_SPI_HZ)) {
         Serial.println("Erro ao iniciar o SD! Usando musica demo.");
         return false;
     }
@@ -95,5 +95,5 @@ void loop()
     screen.update();
     app.poll(millis());
     view.poll(millis());
-    delay(1);
+    delay(5);   // botoes tem debounce de 30 ms e o encoder e por interrupcao: 200 Hz basta
 }

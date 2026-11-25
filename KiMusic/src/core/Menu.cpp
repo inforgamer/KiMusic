@@ -141,6 +141,7 @@ void Menu::selectMain()
 
         case ITEM_REPEAT:
             player.cycleRepeat();
+            if (device) device->saveSettings();
             render();
             break;
 

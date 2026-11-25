@@ -32,6 +32,7 @@ class Device : public DeviceControl
         void screenOff() override;
         void screenOn() override;
         bool isScreenOff() const override { return screenIsOff; }
+        void saveSettings() override;
         void powerOff() override;
 
     private:
@@ -44,8 +45,6 @@ class Device : public DeviceControl
         Preferences prefs;
         int brightnessPercent = BRIGHTNESS_DEFAULT;
         bool screenIsOff = false;
-
-        void saveAll();
 };
 
 #endif

@@ -18,25 +18,60 @@ void ScreenView::trackChanged(const TrackSource &source, size_t index, const Mp3
     screen.setMusicInfo(info.title.c_str(), info.artist.c_str(), info.album.c_str());
 
     // Mostra a nota agora; a capa e decodificada em poll() se a musica ficar.
-    screen.showCover(false);
+    screen.showCover(false);   // escondida: a tarefa pode escrever no buffer
+    trackId++;
     coverSource = &source;
-    coverIndex = index;
+    coverPath = source.path(index);
     coverInfo = info;
     coverRequestedAt = millis();
 }
 
 void ScreenView::poll(uint32_t nowMs)
 {
+    if (decoding) {
+        return;   // a tarefa ainda esta no buffer
+    }
+
+    if (waitingResult) {
+        waitingResult = false;
+        if (jobId == trackId) {   // senao a musica ja mudou: o buffer fica escondido
+            screen.showCover(jobOk);
+            Serial.printf("Capa: %s (%lu ms)\r\n", jobOk ? "ok" : "nenhuma", (unsigned long)jobMs);
+        }
+    }
+
     if (!coverSource || nowMs - coverRequestedAt < COVER_DELAY_MS) {
         return;
     }
-    const TrackSource *source = coverSource;
+    if (!coverTask) {
+        // Nucleo 1, mesma prioridade do loop: os dois se revezam a cada tick e o loop
+        // quase so dorme, entao a capa sai quase na velocidade cheia. No nucleo 0 teria
+        // de ficar na prioridade da tarefa ociosa (vigiada pelo watchdog) e levou o dobro.
+        xTaskCreatePinnedToCore(coverTaskEntry, "cover", COVER_TASK_STACK, this, 1, &coverTask, 1);
+        if (!coverTask) {
+            return;
+        }
+    }
+    jobSource = coverSource;
+    jobPath = coverPath;
+    jobInfo = coverInfo;
+    jobId = trackId;
     coverSource = nullptr;
+    waitingResult = true;
+    decoding = true;
+    xTaskNotifyGive(coverTask);
+}
 
-    bool hasCover = source->loadCover(coverIndex, coverInfo, screen.coverBuffer());
-    screen.showCover(hasCover);
-    Serial.printf("Capa: %s (%lu ms)\r\n", hasCover ? "ok" : "nenhuma",
-                  (unsigned long)(millis() - nowMs));
+void ScreenView::coverTaskEntry(void *arg)
+{
+    ScreenView *self = static_cast<ScreenView *>(arg);
+    for (;;) {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        uint32_t start = millis();
+        self->jobOk = self->jobSource->loadCover(self->jobPath, self->jobInfo, self->screen.coverBuffer());
+        self->jobMs = millis() - start;
+        self->decoding = false;
+    }
 }
 
 void ScreenView::progressChanged(uint32_t elapsed, uint32_t duration)

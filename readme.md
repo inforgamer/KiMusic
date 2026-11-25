@@ -122,7 +122,7 @@ Fluxo: **botões → App → Player/Menu → ScreenView → Screen** e **Player 
 
 ### Simulação no Wokwi
 
-O `wokwi.toml` copia a pasta `KiMusic/wokwi-sd/` para o cartão SD simulado. Ela é uma versão pequena do `SD/` (só o começo de cada MP3, porque o Wokwi não toca som e o `SD/` inteiro estoura a memória do simulador), com duas músicas de teste com capa embutida (PNG e JPEG progressivo). As durações aparecem curtas por causa do corte.
+O `wokwi.toml` copia a pasta `KiMusic/wokwi-sd/` para o cartão SD simulado. Ela é gerada a cada build (`tools/wokwi_sd.py`) a partir do `SD/`: cada MP3 fica com a tag inteira (título e capa) e só os primeiros 300 KB de áudio, porque o Wokwi não toca som e o `SD/` inteiro estoura a memória do simulador. Para testar uma música nova no Wokwi, ponha no `SD/` e compile. Músicas sem cabeçalho Xing/TLEN aparecem com duração curta por causa do corte.
 
 ### Testes no PC
 

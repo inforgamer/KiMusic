@@ -34,9 +34,10 @@ class TrackSource
         // preenchidos com um valor padrao. Retorna false se o arquivo for invalido.
         virtual bool load(size_t index, Mp3Info &info) const = 0;
 
-        // Decodifica a capa em out (CoverDecoder::BUFFER_PIXELS pixels RGB565).
-        // Retorna false se a musica nao tiver capa.
-        virtual bool loadCover(size_t index, const Mp3Info &info, uint16_t *out) const = 0;
+        // Decodifica a capa da musica em path (o de path(index)) em out
+        // (CoverDecoder::BUFFER_PIXELS pixels RGB565). Retorna false se nao tiver capa.
+        // Recebe o caminho, nao o indice: roda em outra tarefa e a lista pode mudar.
+        virtual bool loadCover(const std::string &path, const Mp3Info &info, uint16_t *out) const = 0;
 };
 
 #endif

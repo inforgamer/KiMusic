@@ -25,6 +25,8 @@ namespace Config
 
     // ---- Outros ----
     constexpr uint8_t PIN_SD_CS     = 15;   // SD divide o SPI com o display
+    constexpr uint32_t SD_SPI_HZ    = 20000000;   // padrao da biblioteca e 4 MHz; SD em SPI aceita ate 25 MHz
+                                                  // (se der erro de leitura com fios longos, baixe para 10 MHz)
     constexpr uint8_t PIN_BACKLIGHT = 21;   // LED do display (PWM = brilho)
 
     // ---- DAC PCM5102A (I2S) ----

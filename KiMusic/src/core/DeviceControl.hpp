@@ -23,6 +23,7 @@ class DeviceControl
         virtual void screenOn() = 0;
         virtual bool isScreenOff() const = 0;
 
+        virtual void saveSettings() = 0;               // grava volume e Repetir (o brilho ja e gravado)
         virtual void powerOff() = 0;                   // salva tudo e desliga (nao retorna na placa)
 };
 

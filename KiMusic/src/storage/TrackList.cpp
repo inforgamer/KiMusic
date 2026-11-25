@@ -50,20 +50,17 @@ size_t TrackList::scanFolder(const char *folder)
     }
 
     size_t found = 0;   // todos os MP3, mesmo os que passam do limite
-    File entry = dir.openNextFile();
-    while (entry) {
-        if (!entry.isDirectory()) {
-            String fileName = entry.name();
-            fileName = fileName.substring(fileName.lastIndexOf('/') + 1);
-            if (isMp3(fileName)) {
-                found++;
-                if (paths.size() < MAX_TRACKS) {
-                    paths.push_back(base + fileName);
-                }
+    // So o nome: openNextFile() abriria cada arquivo (nova busca na pasta a cada um).
+    bool isDir = false;
+    for (String entry = dir.getNextFileName(&isDir); entry.length() > 0;
+         entry = dir.getNextFileName(&isDir)) {
+        String fileName = entry.substring(entry.lastIndexOf('/') + 1);
+        if (!isDir && isMp3(fileName)) {
+            found++;
+            if (paths.size() < MAX_TRACKS) {
+                paths.push_back(base + fileName);
             }
         }
-        entry.close();
-        entry = dir.openNextFile();
     }
     dir.close();
 
@@ -118,8 +115,9 @@ bool TrackList::load(size_t index, Mp3Info &info) const
 
     // Valores padrao para o que nao veio nas tags.
     if (info.title.empty())  info.title  = name(index);
-    if (info.artist.empty()) info.artist = "Artista desconhecido";
-    if (info.album.empty())  info.album  = "Álbum desconhecido";
+    // Curtos para caber na linha da tela ("Álbum desconhecido" aparecia como "Album...").
+    if (info.artist.empty()) info.artist = "Sem artista";
+    if (info.album.empty())  info.album  = "Sem álbum";
     return ok;
 }
 
@@ -127,21 +125,22 @@ bool TrackList::load(size_t index, Mp3Info &info) const
 //  Capa
 // -----------------------------------------------------------------------------
 
-bool TrackList::loadCover(size_t index, const Mp3Info &info, uint16_t *out) const
+bool TrackList::loadCover(const std::string &trackPath, const Mp3Info &info, uint16_t *out) const
 {
-    if (index >= paths.size()) {
+    if (trackPath.empty()) {
         return false;
     }
+    String path(trackPath.c_str());
 
     // 1) Imagem embutida no proprio MP3 (JPEG ou PNG).
     if ((info.coverFormat == CoverFormat::Jpeg || info.coverFormat == CoverFormat::Png) &&
-        decodeCoverFile(paths[index], &info, out)) {
+        decodeCoverFile(path, &info, out)) {
         return true;
     }
 
     // 2) Arquivo com o mesmo nome da musica na pasta de capas.
     static const char *const EXTENSIONS[] = {".jpg", ".jpeg", ".png"};
-    String base = coverFolder + "/" + baseName(paths[index]);
+    String base = coverFolder + "/" + baseName(path);
     for (const char *ext : EXTENSIONS) {
         String coverPath = base + ext;
         if (fs.exists(coverPath) && decodeCoverFile(coverPath, nullptr, out)) {

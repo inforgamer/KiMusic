@@ -63,7 +63,7 @@ void Device::screenOn()
     screen.wakeUp(brightnessPercent);
 }
 
-void Device::saveAll()
+void Device::saveSettings()
 {
     prefs.putUChar(KEY_BRIGHTNESS, (uint8_t)brightnessPercent);
     prefs.putUChar(KEY_VOLUME, (uint8_t)player.volume());
@@ -75,7 +75,7 @@ void Device::powerOff()
     Serial.println("Desligando...");
 
     audio.stop();                       // silencia o DAC
-    saveAll();
+    saveSettings();
     prefs.end();
 
     if (screenIsOff) {

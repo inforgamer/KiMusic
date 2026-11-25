@@ -13,3 +13,6 @@ test/host/*.o
 test/host/*.bmp
 
 !.vscode/*
+
+# Cartao do Wokwi: gerado a cada build por tools/wokwi_sd.py (a partir de SD/)
+wokwi-sd/

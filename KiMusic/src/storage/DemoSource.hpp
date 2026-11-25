@@ -31,7 +31,7 @@ class DemoSource : public TrackSource
             return true;
         }
 
-        bool loadCover(size_t, const Mp3Info &, uint16_t *) const override
+        bool loadCover(const std::string &, const Mp3Info &, uint16_t *) const override
         {
             return false;
         }

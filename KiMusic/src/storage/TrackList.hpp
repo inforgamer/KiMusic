@@ -38,7 +38,7 @@ class TrackList : public TrackSource
         std::string name(size_t index) const override;
         std::string path(size_t index) const override;
         bool load(size_t index, Mp3Info &info) const override;
-        bool loadCover(size_t index, const Mp3Info &info, uint16_t *out) const override;
+        bool loadCover(const std::string &path, const Mp3Info &info, uint16_t *out) const override;
 
         // "/music/Faixa 01.mp3" -> "Faixa 01"
         static String baseName(const String &path);

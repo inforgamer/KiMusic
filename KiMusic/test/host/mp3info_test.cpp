@@ -29,8 +29,6 @@ static void testRealFile(const char *path)
         CHECK_EQ(info.album, std::string("Persona 3 Reload Original Soundtrack"));
         CHECK_EQ(info.duration, 294u);   // 293,52 s calculados em Python
         CHECK_EQ(info.audioOffset, 185u); // logo depois da tag ID3v2 de 175 bytes
-        CHECK_EQ(info.sampleRate, 48000u);
-        CHECK_EQ(info.bitrate, 320u);
         CHECK_EQ(info.offsetForSecond(0), 185u);
         CHECK_EQ(info.offsetForSecond(info.duration), info.audioOffset + info.audioBytes);
         // Metade do tempo cai na metade do audio.

@@ -11,7 +11,7 @@
 //      /music/Minha Musica.mp3        <- caminho absoluto no SD
 //      ../music/Outra.mp3             <- relativo a pasta /playlists
 //      Mais Uma.mp3                   <- so o nome: procurado em /music
-//  Musicas que nao existirem no SD sao puladas.
+//  Musicas que nao existirem no SD sao puladas (as de /music so na hora de tocar).
 //
 //  So uma playlist fica carregada por vez (a ultima aberta).
 // =============================================================================

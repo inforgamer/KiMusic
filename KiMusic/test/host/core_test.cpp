@@ -40,7 +40,7 @@ class FakeSource : public TrackSource
             return true;
         }
 
-        bool loadCover(size_t, const Mp3Info &, uint16_t *) const override { return false; }
+        bool loadCover(const std::string &, const Mp3Info &, uint16_t *) const override { return false; }
 };
 
 // ---------- Tela falsa: guarda o ultimo estado recebido ----------
@@ -142,6 +142,7 @@ class FakeDevice : public DeviceControl
     public:
         int level = 80;
         int powerOffs = 0;
+        int saves = 0;
         bool screenIsOff = false;
 
         int brightness() const override { return level; }
@@ -152,6 +153,7 @@ class FakeDevice : public DeviceControl
         void screenOff() override { screenIsOff = true; }
         void screenOn() override { screenIsOff = false; }
         bool isScreenOff() const override { return screenIsOff; }
+        void saveSettings() override { saves++; }
         void powerOff() override { powerOffs++; }
 };
 
@@ -584,6 +586,7 @@ static void testMenuMain()
     CHECK_EQ(view.menuRows[Menu::ITEM_REPEAT], std::string("Repetir: Uma"));
     m.select();
     CHECK_EQ(view.menuRows[Menu::ITEM_REPEAT], std::string("Repetir: Desligado"));
+    CHECK_EQ(dev.saves, 3);                    // cada troca e gravada (sobrevive a RESET)
 
     m.rotate(-1);                              // Aleatorio
     m.select();

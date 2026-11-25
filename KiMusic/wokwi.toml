@@ -3,8 +3,8 @@ version = 1
 firmware = ".pio/build/esp32-s3-devkitc-1/firmware.bin"
 
 # Cartao SD simulado: a pasta wokwi-sd/ e copiada para ele a cada inicio da simulacao.
-# E uma versao pequena do SD/ (so o comeco de cada MP3: o Wokwi nao toca som, e o
-# SD/ inteiro, ~39 MB, estoura a memoria do simulador). Tem tambem 2 musicas de
-# teste com capa embutida (PNG e JPEG progressivo).
+# Ela e gerada a cada build por tools/wokwi_sd.py: o SD/ com cada MP3 cortado (o Wokwi
+# nao toca som, e o SD/ inteiro estoura a memoria do simulador). Musica nova: ponha
+# em SD/ e compile.
 [[sdcard]]
 folder = 'wokwi-sd'

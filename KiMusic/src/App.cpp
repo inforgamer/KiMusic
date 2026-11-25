@@ -98,7 +98,9 @@ void App::handlePlayer(const Input &in)
 
     // Os comandos que nao valem no modo atual sao ignorados pelo proprio Player.
     if (in.position) player.togglePositionMode();
-    if (in.volume)   player.toggleVolumeMode();
+    if (in.volume && player.toggleVolumeMode() && player.mode() == PlayerMode::Normal) {
+        device.saveSettings();   // saiu do modo volume: grava uma vez, nao a cada passo
+    }
     if (in.previous) player.previous();
     if (in.next)     player.next();
 }

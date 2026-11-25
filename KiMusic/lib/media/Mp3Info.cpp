@@ -400,8 +400,6 @@ bool readMp3Info(ByteReader &reader, Mp3Info &out)
     uint32_t audioEnd = reader.size() - (hasId3v1 ? 128 : 0);
     out.audioOffset = framePos;
     out.audioBytes = audioEnd > framePos ? audioEnd - framePos : 0;
-    out.sampleRate = f.sampleRate;
-    out.bitrate = f.bitrate;
 
     if (tlenMs > 0) {
         out.duration = (tlenMs + 500) / 1000;
