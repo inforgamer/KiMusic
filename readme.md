@@ -76,6 +76,7 @@ Menu
 * **Repetir Desligado:** no fim da lista volta para a primeira música e pausa. **Todas:** continua tocando. **Uma:** repete a atual.
 * Brilho, volume e Repetir ficam salvos e voltam iguais ao ligar.
 * **Capas:** JPEG (comum ou progressivo) e PNG, embutidas no MP3 ou em `/cover/<nome da música>.jpg|.jpeg|.png`. JPEG progressivo aparece mais quadriculado; PNG entrelaçado, de 16 bits ou com mais de 1500 px de largura não aparece.
+* **Baixar capas que faltam:** na pasta `KiMusic`, rode `python tools/fetch_covers.py` (ou passe a pasta do cartão: `python tools/fetch_covers.py E:\`). Para cada MP3 sem capa, ele busca artista + título no iTunes e salva `cover/<nome>.jpg` em 140×140, o tamanho da tela. O primeiro resultado da busca pode ser a capa errada: apague o `.jpg` e ajuste a tag ou o nome para tentar de novo.
 * **Limite:** até 200 músicas por lista e 50 playlists.
 
 ### Cartão SD
