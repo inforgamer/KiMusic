@@ -94,5 +94,6 @@ void loop()
 {
     screen.update();
     app.poll(millis());
+    view.poll(millis());
     delay(1);
 }

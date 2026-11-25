@@ -27,6 +27,7 @@ O coração do projeto roda em **C++**, focando em controle de baixo nível e pe
 * LVGL 8.3 + SquareLine Studio (Interface)
 * TFT_eSPI (Driver do display)
 * ESP8266Audio (Decodificador MP3 + saída I2S)
+* JPEGDEC e PNGdec (Capas do álbum)
 * VS Code & Wokwi (Simulação)
 * Git / GitHub
 
@@ -47,19 +48,19 @@ A pinagem completa está em [`KiMusic/Documentação/Pinagem.md`](KiMusic/Docume
 | :--- | :--- | :--- |
 | **Encoder (girar)** | Volume ou posição, conforme o modo | Move a seleção (ou ajusta o brilho) |
 | **Central (clique)** | Play / Pause | Escolhe o item |
-| **Central (segurar 3 s)** | Abre o menu | Fecha o menu |
+| **Central (toque duplo)** | Abre o menu (não pausa nem dá Play) | Fecha o menu |
 | **Central (segurar 2 s, desligado)** | Liga | — |
-| **Vol** (cima) | Liga/desliga o modo Volume (mostra a barra) | — |
-| **Pos** (baixo) | Liga/desliga o modo Posição (5 s por passo) | — |
-| **Prev** (esquerda) | Volta ao início da música; se ela acabou de começar, vai para a anterior | Volta uma página / fecha |
+| **Vol** (cima) | Liga/desliga o modo Volume (mostra a barra) | Sobe (no brilho: aumenta) |
+| **Pos** (baixo) | Liga/desliga o modo Posição (5 s por passo) | Desce (no brilho: diminui) |
+| **Prev** (esquerda) | Volta ao início da música; se ela acabou de começar, vai para a anterior | Volta uma página |
 | **Next** (direita) | Próxima música | — |
 
 ### Menu
 
 ```
 Menu
- ├─ Músicas ................. músicas da lista atual; escolher uma começa a tocá-la
- ├─ Playlists ............... "Todas as músicas" + playlists .m3u do SD
+ ├─ Músicas ................. músicas da lista atual; escolher uma começa a tocá-la (+ Voltar)
+ ├─ Playlists ............... Favoritas, Todas as músicas, playlists .m3u do SD, Voltar
  ├─ Aleatório: <modo> ....... Desligado → Playlist → Geral
  ├─ Repetir: <modo> ......... Desligado → Todas → Uma
  ├─ Favoritar música ........ adiciona a música atual na playlist "Favoritas"
@@ -74,12 +75,14 @@ Menu
 * **Aleatório Playlist:** embaralha a lista atual. **Geral:** passa para todas as músicas do SD e embaralha.
 * **Repetir Desligado:** no fim da lista volta para a primeira música e pausa. **Todas:** continua tocando. **Uma:** repete a atual.
 * Brilho, volume e Repetir ficam salvos e voltam iguais ao ligar.
+* **Capas:** JPEG (comum ou progressivo) e PNG, embutidas no MP3 ou em `/cover/<nome da música>.jpg|.jpeg|.png`. JPEG progressivo aparece mais quadriculado; PNG entrelaçado, de 16 bits ou com mais de 1500 px de largura não aparece.
+* **Limite:** até 200 músicas por lista e 50 playlists.
 
 ### Cartão SD
 
 ```
 /music/*.mp3                    músicas (ordem alfabética, até 200)
-/cover/<nome da música>.jpg     capa, se o MP3 não tiver uma embutida
+/cover/<nome da música>.jpg     capa (.jpg, .jpeg ou .png), se o MP3 não tiver uma embutida
 /playlists/<nome>.m3u           playlists (uma música por linha)
 /playlists/Favoritas.m3u        criada pelo "Favoritar música"
 ```
@@ -112,11 +115,14 @@ KiMusic/
 │  └─ UI/           gerado pelo SquareLine Studio — não editar à mão
 ├─ lib/
 │  ├─ media/        Mp3Info (tags/duração) e CoverDecoder (capa JPEG)
-│  └─ tjpgd/        decodificador JPEG (ChaN)
 └─ test/host/       testes no PC
 ```
 
 Fluxo: **botões → App → Player/Menu → ScreenView → Screen** e **Player → AudioEngine → DAC**
+
+### Simulação no Wokwi
+
+O `wokwi.toml` copia a pasta `KiMusic/wokwi-sd/` para o cartão SD simulado. Ela é uma versão pequena do `SD/` (só o começo de cada MP3, porque o Wokwi não toca som e o `SD/` inteiro estoura a memória do simulador), com duas músicas de teste com capa embutida (PNG e JPEG progressivo). As durações aparecem curtas por causa do corte.
 
 ### Testes no PC
 

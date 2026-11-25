@@ -7,6 +7,7 @@
 //    3. Primeiro frame MPEG de audio -> duracao (TLEN > Xing/Info > VBRI > CBR)
 // =============================================================================
 #include "Mp3Info.hpp"
+#include "UnsyncReader.hpp"
 
 #include <stdlib.h>
 #include <string.h>
@@ -119,12 +120,13 @@ std::string decodeText(const uint8_t *b, size_t len)
 //   v2.3/v2.4 APIC: codificacao, MIME\0, tipo, descricao\0, dados
 //   v2.2 PIC:       codificacao, formato (3 letras), tipo, descricao\0, dados
 // Prefere a capa frontal (tipo 3) quando ha mais de uma imagem.
-void readPicture(ByteReader &r, uint32_t pos, uint32_t size, int version, Mp3Info &out, bool &haveFront)
+// Retorna true se esta imagem passou a ser a capa (out.cover* preenchidos).
+bool readPicture(ByteReader &r, uint32_t pos, uint32_t size, int version, Mp3Info &out, bool &haveFront)
 {
     uint8_t head[MAX_TEXT_FRAME];
     size_t len = size < sizeof(head) ? size : sizeof(head);
     if (len < 4 || !r.readAt(pos, head, len)) {
-        return;
+        return false;
     }
 
     uint8_t encoding = head[0];
@@ -136,7 +138,7 @@ void readPicture(ByteReader &r, uint32_t pos, uint32_t size, int version, Mp3Inf
         while (i < len && head[i] != 0) i++;   // MIME
         i++;
     }
-    if (i >= len) return;
+    if (i >= len) return false;
 
     uint8_t pictureType = head[i++];
 
@@ -149,11 +151,11 @@ void readPicture(ByteReader &r, uint32_t pos, uint32_t size, int version, Mp3Inf
         while (i < len && head[i] != 0) i++;
         i++;
     }
-    if (i + 4 > len || i >= size) return;
+    if (i + 4 > len || i >= size) return false;
 
     bool front = (pictureType == 3);
     if (out.coverFormat != CoverFormat::None && (haveFront || !front)) {
-        return;   // ja temos uma imagem melhor ou igual
+        return false;   // ja temos uma imagem melhor ou igual
     }
 
     const uint8_t *data = head + i;
@@ -167,6 +169,7 @@ void readPicture(ByteReader &r, uint32_t pos, uint32_t size, int version, Mp3Inf
     out.coverOffset = pos + (uint32_t)i;
     out.coverSize = size - (uint32_t)i;
     haveFront = front;
+    return true;
 }
 
 // Le a tag ID3v2. Retorna o offset onde o audio comeca (0 se nao houver tag).
@@ -183,14 +186,25 @@ uint32_t readId3v2(ByteReader &r, Mp3Info &out, uint32_t &tlenMs)
     uint32_t end = 10 + tagSize;
     uint32_t audioStart = end + ((flags & 0x10) ? 10 : 0);   // rodape (v2.4)
 
-    if (version < 2 || version > 4 || (flags & 0x80)) {      // 0x80 = unsynchronisation (raro)
+    if (version < 2 || version > 4) {
         return audioStart;
     }
 
+    // Nao sincronizacao (flag 0x80): na v2.2/v2.3 vale para a tag inteira, entao
+    // os frames sao lidos de um UnsyncReader (posicoes sem os 00 extras). Na v2.4
+    // vale frame a frame (flag 0x0002 de cada frame) e e tratada no laco abaixo.
+    bool tagUnsync = (flags & 0x80) != 0;
+    UnsyncReader wholeTag(r, 10, end);
+    ByteReader &t = (tagUnsync && version < 4) ? static_cast<ByteReader &>(wholeTag) : r;
     uint32_t pos = 10;
+    if (&t == &wholeTag) {
+        pos = 0;
+        end = wholeTag.size();
+    }
+
     if (flags & 0x40) {   // cabecalho estendido
         uint8_t e[4];
-        if (!r.readAt(pos, e, 4)) {
+        if (!t.readAt(pos, e, 4)) {
             return audioStart;
         }
         pos += (version == 4) ? syncsafe(e) : be32(e) + 4;
@@ -202,7 +216,7 @@ uint32_t readId3v2(ByteReader &r, Mp3Info &out, uint32_t &tlenMs)
     bool haveFront = false;
 
     while (pos + headerLen <= end) {
-        if (!r.readAt(pos, fh, headerLen) || fh[0] == 0) {
+        if (!t.readAt(pos, fh, headerLen) || fh[0] == 0) {
             break;   // padding
         }
 
@@ -247,13 +261,24 @@ uint32_t readId3v2(ByteReader &r, Mp3Info &out, uint32_t &tlenMs)
             size = (size > 4) ? size - 4 : 0;
         }
 
+        // v2.4: frame nao sincronizado -> le o frame por um UnsyncReader proprio.
+        bool frameUnsync = version == 4 && (tagUnsync || (frameFlags & 0x0002));
+        UnsyncReader frameReader(r, dataPos, dataPos + size);
+        ByteReader &f = frameUnsync ? static_cast<ByteReader &>(frameReader) : t;
+        uint32_t fPos = frameUnsync ? 0 : dataPos;
+        uint32_t fSize = frameUnsync ? frameReader.size() : size;
+
         if (isPicture) {
-            readPicture(r, dataPos, size, version, out, haveFront);
+            if (readPicture(f, fPos, fSize, version, out, haveFront)) {
+                out.coverUnsync = (&f != &r);
+                out.coverUnsyncStart = frameUnsync ? dataPos : 10;
+                out.coverUnsyncEnd = frameUnsync ? dataPos + size : 10 + tagSize;
+            }
             continue;
         }
 
-        size_t len = size < MAX_TEXT_FRAME ? size : MAX_TEXT_FRAME;
-        if (len == 0 || !r.readAt(dataPos, data, len)) {
+        size_t len = fSize < MAX_TEXT_FRAME ? fSize : MAX_TEXT_FRAME;
+        if (len == 0 || !f.readAt(fPos, data, len)) {
             continue;
         }
 

@@ -1,15 +1,19 @@
 // =============================================================================
 //  CoverDecoder.hpp  -  Decodificador da capa do album
 // -----------------------------------------------------------------------------
-//  Transforma um JPEG (embutido no MP3 ou arquivo .jpg) em um quadrado de
+//  Transforma uma imagem (embutida no MP3 ou arquivo de capa) em um quadrado de
 //  COVER_SIZE x COVER_SIZE pixels RGB565, pronto para o LVGL.
 //
-//  - A imagem e lida aos poucos do ByteReader: so ~4 KB de RAM de trabalho.
-//  - Usa a reducao do proprio decodificador (1/2, 1/4, 1/8) e depois ajusta
-//    para COVER_SIZE com corte quadrado no centro.
-//  - Usa o TJpgDec (lib/tjpgd). Nao suporta JPEG progressivo nem PNG.
+//  Formatos (detectados pela assinatura do arquivo):
+//    - JPEG comum (baseline) e progressivo   -> biblioteca JPEGDEC
+//      (progressivo: so a 1a passada, em 1/8 do tamanho, depois ampliada)
+//    - PNG (8 bits por canal, nao entrelacado, ate MAX_PNG_WIDTH) -> PNGdec
 //
-//  Codigo puro C++ (sem Arduino): testado no PC em test/host/cover_test.cpp.
+//  A imagem e lida aos poucos do ByteReader; os decodificadores sao alocados
+//  so durante a decodificacao (JPEG ~20 KB, PNG ~55 KB) e liberados no fim.
+//  Depois a imagem e cortada em quadrado no centro e ajustada para COVER_SIZE.
+//
+//  Testado no PC em test/host/cover_test.cpp.
 // =============================================================================
 #ifndef COVERDECODER_HPP
 #define COVERDECODER_HPP
@@ -25,13 +29,16 @@ namespace CoverDecoder
     constexpr int COVER_SIZE = 140;
     constexpr size_t BUFFER_PIXELS = (size_t)COVER_SIZE * COVER_SIZE;
 
-    // Decodifica o JPEG que esta em [offset, offset + size) do reader.
+    // Largura maxima de PNG (limite do buffer de linhas do PNGdec, ver platformio.ini).
+    constexpr int MAX_PNG_WIDTH = 1500;
+
+    // Decodifica a imagem (JPEG ou PNG) que esta em [offset, offset + size) do reader.
     //   size = 0     -> vai ate o fim do reader
     //   out          -> BUFFER_PIXELS pixels RGB565
     //   swapBytes    -> true para o LVGL com LV_COLOR_16_SWAP = 1
-    // Retorna false se o JPEG for invalido ou nao suportado.
-    bool decodeJpeg(ByteReader &reader, uint32_t offset, uint32_t size,
-                    uint16_t *out, bool swapBytes);
+    // Retorna false se a imagem for invalida, de formato nao suportado ou se faltar memoria.
+    bool decode(ByteReader &reader, uint32_t offset, uint32_t size,
+                uint16_t *out, bool swapBytes);
 }
 
 #endif

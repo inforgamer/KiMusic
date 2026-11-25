@@ -94,6 +94,7 @@ void Player::setSource(const TrackSource &src, size_t startIndex, bool play)
         return;
     }
     source = &src;
+    failStreak = 0;   // falhas da lista anterior nao contam nesta
     if (shuffleMode == ShuffleMode::All) {
         shuffleMode = ShuffleMode::Playlist;   // escolher uma lista sai do "geral"
     }
@@ -126,6 +127,14 @@ void Player::update(uint32_t nowMs)
     if (usesAudio()) {
         if (audioError) {               // arquivo nao abriu: pula
             audioError = false;
+            if (failStreak >= source->count()) {
+                // Nenhuma musica da lista abriu (ex.: SD removido): pausa em vez
+                // de girar a lista para sempre.
+                failStreak = 0;
+                playing = false;
+                notifyStatus();
+                return;
+            }
             finishTrack();
             return;
         }
@@ -259,6 +268,7 @@ bool Player::previous()
 void Player::playTrack(size_t index)
 {
     playing = true;
+    failStreak = 0;   // escolha do usuario: tenta a lista toda de novo
     if (shuffleMode != ShuffleMode::Off) {
         buildOrder(index);        // a escolhida vira a primeira da nova ordem
         loadAt(0);
@@ -300,6 +310,7 @@ void Player::audioPlayFrom(uint32_t seconds)
     }
     audioLoaded = audio->start(currentPath, info, seconds);
     audioError = !audioLoaded;
+    failStreak = audioLoaded ? 0 : failStreak + 1;
 }
 
 void Player::audioHalt()

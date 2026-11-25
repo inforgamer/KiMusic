@@ -9,7 +9,7 @@ App::App(Player &p, Menu &m, DeviceControl &d)
       menu(m),
       device(d),
       encoder(Config::PIN_ENCODER_A, Config::PIN_ENCODER_B),
-      centerButton(Config::PIN_CENTER, Config::MENU_HOLD_MS),
+      centerButton(Config::PIN_CENTER, Config::DOUBLE_TAP_MS),
       previousButton(Config::PIN_PREVIOUS),
       nextButton(Config::PIN_NEXT),
       volumeButton(Config::PIN_VOLUME),
@@ -65,14 +65,16 @@ void App::handleMenu(const Input &in)
         menu.rotate(in.rotation);
     }
 
-    if (in.center == ButtonEvent::LongPress) {
+    if (in.center == ButtonEvent::DoubleClick) {
         menu.close();
     } else if (in.center == ButtonEvent::Click) {
         menu.select();
-    } else if (in.previous) {
-        menu.back();
     }
-    // Vol, Pos e Next nao fazem nada com o menu aberto.
+
+    // Joystick: Vol sobe, Pos desce, Prev volta. Next nao faz nada no menu.
+    if (in.volume)   menu.up();
+    if (in.position) menu.down();
+    if (in.previous) menu.back();
 }
 
 // -----------------------------------------------------------------------------
@@ -85,8 +87,8 @@ void App::handlePlayer(const Input &in)
         player.rotate(in.rotation);
     }
 
-    if (in.center == ButtonEvent::LongPress) {
-        menu.open();
+    if (in.center == ButtonEvent::DoubleClick) {
+        menu.open();   // nao mexe no Play/Pause: o toque simples so chega depois da janela
         return;   // o resto desta volta e ignorado
     }
 

@@ -115,6 +115,7 @@ class Player
 
         bool audioLoaded = false;      // o backend esta com a musica atual aberta
         bool audioError = false;       // start() falhou: pular a musica no proximo update()
+        size_t failStreak = 0;         // start() que falharam seguidos (para se nenhum abrir)
         bool seekPending = false;      // posicao mudou e o audio ainda nao saltou
         uint32_t seekRequestedAt = 0;
 

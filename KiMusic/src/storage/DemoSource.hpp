@@ -1,9 +1,9 @@
 // =============================================================================
-//  storage/DemoSource.hpp  -  Musica de exemplo quando nao ha cartao SD
+//  storage/DemoSource.hpp  -  Musicas de exemplo quando nao ha cartao SD
 // -----------------------------------------------------------------------------
-//  Uma unica musica, sem arquivo e sem capa. Usada quando o SD falha ou a
-//  pasta de musicas esta vazia (por exemplo na simulacao do Wokwi), para a
-//  interface e os botoes continuarem funcionando.
+//  Algumas musicas sem arquivo e sem capa. Usadas quando o SD falha ou a pasta
+//  de musicas esta vazia (por exemplo na simulacao do Wokwi), para a interface,
+//  os botoes e a troca de musica (Anterior/Proxima/menu) continuarem testaveis.
 // =============================================================================
 #ifndef STORAGE_DEMOSOURCE_HPP
 #define STORAGE_DEMOSOURCE_HPP
@@ -13,26 +13,47 @@
 class DemoSource : public TrackSource
 {
     public:
-        size_t count() const override { return 1; }
+        size_t count() const override { return COUNT; }
 
-        std::string name(size_t) const override
+        std::string name(size_t index) const override
         {
-            return "Full Moon Full Life (demo)";
+            return std::string(track(index).title) + " (demo)";
         }
 
-        bool load(size_t, Mp3Info &info) const override
+        bool load(size_t index, Mp3Info &info) const override
         {
+            const Track &t = track(index);
             info = Mp3Info();
-            info.title = "Full Moon Full Life";
+            info.title = t.title;
             info.artist = "Demo (sem cartão SD)";
-            info.album = "Persona 3 Reload Original Soundtrack";
-            info.duration = 293;
+            info.album = t.album;
+            info.duration = t.duration;
             return true;
         }
 
         bool loadCover(size_t, const Mp3Info &, uint16_t *) const override
         {
             return false;
+        }
+
+    private:
+        struct Track
+        {
+            const char *title;
+            const char *album;
+            uint32_t duration;   // segundos
+        };
+
+        static constexpr size_t COUNT = 3;
+
+        static const Track &track(size_t index)
+        {
+            static const Track tracks[COUNT] = {
+                {"Full Moon Full Life", "Persona 3 Reload Original Soundtrack", 293},
+                {"SoundHelix Song 1",   "SoundHelix",                           373},
+                {"SoundHelix Song 2",   "SoundHelix",                           426},
+            };
+            return tracks[index % COUNT];
         }
 };
 

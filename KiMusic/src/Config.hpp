@@ -15,7 +15,7 @@ namespace Config
     // ---- Encoder rotativo (KY-040) ----
     constexpr uint8_t PIN_ENCODER_A = 6;    // CLK
     constexpr uint8_t PIN_ENCODER_B = 7;    // DT
-    constexpr uint8_t PIN_CENTER    = 5;    // SW: Play/Pause (clique) e Menu (segurar)
+    constexpr uint8_t PIN_CENTER    = 5;    // SW: Play/Pause (toque) e Menu (toque duplo)
 
     // ---- Botoes (cruz direcional) ----
     constexpr uint8_t PIN_VOLUME    = 16;   // cima     (vermelho)
@@ -34,7 +34,7 @@ namespace Config
     constexpr uint8_t PIN_DAC_MUTE  = 39;   // XSMT: HIGH = som, LOW = mudo
 
     // ---- Botao central: tempos de pressao ----
-    constexpr uint32_t MENU_HOLD_MS     = 3000;   // segurar 3 s: abre/fecha o menu
+    constexpr uint32_t DOUBLE_TAP_MS    = 400;    // toque duplo (abre/fecha o menu); o toque simples espera isso
     constexpr uint32_t POWER_ON_HOLD_MS = 2000;   // segurar 2 s desligado: liga
                                                   // (desligar: Menu > Configuracoes > Desligar)
 
@@ -44,7 +44,7 @@ namespace Config
 
     // ---- Cartao SD ----
     constexpr const char *MUSIC_FOLDER    = "/music";      // MP3 tocados (nao recursivo)
-    constexpr const char *COVER_FOLDER    = "/cover";      // capas: /cover/<nome da musica>.jpg
+    constexpr const char *COVER_FOLDER    = "/cover";      // capas: /cover/<nome da musica>.jpg|.jpeg|.png
     constexpr const char *PLAYLIST_FOLDER = "/playlists";  // playlists: /playlists/<nome>.m3u
     constexpr const char *FAVORITES_NAME  = "Favoritas";   // playlist do "Favoritar musica"
 }

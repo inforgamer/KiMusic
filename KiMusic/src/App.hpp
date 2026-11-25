@@ -6,8 +6,8 @@
 //
 //  Menu fechado:
 //    encoder ............... volume ou posicao (conforme o modo)
-//    clique central ........ Play/Pause
-//    segurar central (3 s) . abre o menu
+//    toque central ......... Play/Pause (confirmado 400 ms depois, ver Button)
+//    toque duplo central ... abre o menu (sem mexer no Play/Pause)
 //    Vol (cima) ............ liga/desliga o modo Volume
 //    Pos (baixo) ........... liga/desliga o modo Posicao
 //    Prev (esquerda) ....... musica anterior / volta ao inicio
@@ -15,10 +15,11 @@
 //
 //  Menu aberto:
 //    encoder ............... move a selecao (ou ajusta o brilho em edicao)
-//    clique central ........ escolhe
-//    Prev .................. volta uma pagina / fecha
-//    segurar central (3 s) . fecha o menu
-//    Vol, Pos, Next ........ ignorados
+//    Vol / Pos ............. sobe / desce (no brilho em edicao: mais / menos)
+//    Prev .................. volta uma pagina
+//    toque central ......... escolhe
+//    toque duplo central ... fecha o menu
+//    Next .................. ignorado
 //
 //  Desligar e so pelo menu (Configuracoes > Desligar). Para ligar: segurar o
 //  central 2 s (ver system/Power).

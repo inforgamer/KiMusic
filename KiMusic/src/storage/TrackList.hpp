@@ -6,7 +6,7 @@
 //  (setPaths, ver SdCatalog).
 //
 //    - load()      le tags e duracao com Mp3Info (titulo vazio = nome do arquivo)
-//    - loadCover() capa: JPEG embutido no MP3 -> <pasta de capas>/<nome>.jpg
+//    - loadCover() capa: imagem embutida no MP3 -> <pasta de capas>/<nome>.jpg|.jpeg|.png
 //
 //  So os caminhos ficam na memoria; os dados de cada musica sao lidos do SD
 //  na hora em que ela e carregada.
@@ -48,7 +48,7 @@ class TrackList : public TrackSource
         String coverFolder;
         std::vector<String> paths;
 
-        bool decodeCoverFile(const String &path, uint32_t offset, uint32_t size, uint16_t *out) const;
+        bool decodeCoverFile(const String &path, const Mp3Info *embedded, uint16_t *out) const;
 };
 
 #endif

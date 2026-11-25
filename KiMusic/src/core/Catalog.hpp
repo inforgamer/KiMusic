@@ -24,6 +24,9 @@ class Catalog
         virtual size_t playlistCount() const = 0;
         virtual std::string playlistName(size_t index) const = 0;
 
+        // Indice da playlist Favoritas (-1 se ela ainda nao existe).
+        virtual long favoritesIndex() const = 0;
+
         // Carrega a playlist. Retorna nullptr se ela estiver vazia ou nao abrir.
         // O ponteiro continua valido ate a proxima chamada de openPlaylist().
         virtual const TrackSource *openPlaylist(size_t index) = 0;

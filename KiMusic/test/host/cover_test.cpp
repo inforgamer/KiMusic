@@ -1,11 +1,13 @@
-// Teste da capa (APIC + decodificacao JPEG) no PC.
+// Teste da capa (APIC + decodificacao JPEG comum/progressivo e PNG) no PC.
 //
 // Compilar e rodar todos os testes (na pasta KiMusic):
 //   powershell -File test/host/run_tests.ps1
 
 #include "test_util.hpp"
 #include "CoverDecoder.hpp"
+#include "UnsyncReader.hpp"
 
+#include <cstdlib>
 #include <string>
 
 using CoverDecoder::COVER_SIZE;
@@ -51,7 +53,7 @@ static void testDecodeFile(const std::vector<uint8_t> &jpeg, const char *bmpPath
     std::printf("Decodifica JPEG real (%u bytes)\n", (unsigned)jpeg.size());
     MemoryReader r;
     r.data = jpeg;
-    CHECK_EQ(CoverDecoder::decodeJpeg(r, 0, 0, pixels.data(), false), true);
+    CHECK_EQ(CoverDecoder::decode(r, 0, 0, pixels.data(), false), true);
 
     // A imagem nao pode ficar toda preta (buffer zerado).
     size_t nonBlack = 0;
@@ -83,7 +85,7 @@ static void testApicInMp3(const std::vector<uint8_t> &jpeg)
     CHECK_EQ(std::memcmp(r.data.data() + info.coverOffset, jpeg.data(), jpeg.size()), 0);
 
     std::vector<uint16_t> fromMp3(CoverDecoder::BUFFER_PIXELS);
-    CHECK_EQ(CoverDecoder::decodeJpeg(r, info.coverOffset, info.coverSize, fromMp3.data(), false), true);
+    CHECK_EQ(CoverDecoder::decode(r, info.coverOffset, info.coverSize, fromMp3.data(), false), true);
     CHECK_EQ(fromMp3 == pixels, true);   // igual a decodificar o arquivo JPEG sozinho
 }
 
@@ -121,12 +123,142 @@ static void testPngOnly()
     CHECK_EQ(info.coverFormat == CoverFormat::Png, true);
 }
 
+// Diferenca media por canal (0..255) entre duas capas RGB565 (sem troca de bytes).
+static double meanDiff(const std::vector<uint16_t> &a, const std::vector<uint16_t> &b)
+{
+    double sum = 0;
+    for (size_t i = 0; i < a.size(); i++) {
+        int ar = (a[i] >> 11) << 3, ag = ((a[i] >> 5) & 0x3F) << 2, ab = (a[i] & 0x1F) << 3;
+        int br = (b[i] >> 11) << 3, bg = ((b[i] >> 5) & 0x3F) << 2, bb = (b[i] & 0x1F) << 3;
+        sum += std::abs(ar - br) + std::abs(ag - bg) + std::abs(ab - bb);
+    }
+    return sum / (3.0 * a.size());
+}
+
+static void testOtherFormats(const char *dir)
+{
+    struct Case { const char *file; const char *label; double maxDiff; };
+    // O JPEG comum de referencia e reduzido pela metade antes da amostragem e o PNG nao,
+    // entao os pixels escolhidos diferem um pouco (~12). O progressivo vem em 1/8 do
+    // tamanho (so a 1a passada) e fica mais suave, por isso tolera mais.
+    const Case cases[] = {
+        {"cover_progressive.jpg", "JPEG progressivo", 30.0},
+        {"cover.png",             "PNG RGB",          15.0},
+        {"cover_rgba.png",        "PNG RGBA",         15.0},
+    };
+    for (const Case &c : cases) {
+        std::string path = std::string(dir) + "/" + c.file;
+        std::vector<uint8_t> data = readFile(path.c_str());
+        std::printf("%s (%u bytes)\n", c.label, (unsigned)data.size());
+        CHECK_EQ(data.empty(), false);
+        MemoryReader r;
+        r.data = data;
+        std::vector<uint16_t> out(CoverDecoder::BUFFER_PIXELS);
+        CHECK_EQ(CoverDecoder::decode(r, 0, 0, out.data(), false), true);
+        double diff = meanDiff(out, pixels);   // comparado com o JPEG comum da mesma capa
+        std::printf("  diferenca media para o JPEG comum: %.1f\n", diff);
+        CHECK_EQ(diff < c.maxDiff, true);
+
+        std::string bmp = "test/host/cover_" + std::string(c.file) + ".bmp";
+        writeBmp(bmp.c_str(), out);
+
+        // swapBytes = true entrega os mesmos pixels com os bytes trocados (formato do LVGL).
+        std::vector<uint16_t> swapped(CoverDecoder::BUFFER_PIXELS);
+        CHECK_EQ(CoverDecoder::decode(r, 0, 0, swapped.data(), true), true);
+        bool same = true;
+        for (size_t i = 0; i < out.size(); i++) {
+            if (swapped[i] != (uint16_t)((out[i] << 8) | (out[i] >> 8))) { same = false; break; }
+        }
+        CHECK_EQ(same, true);
+    }
+}
+
+static void testPngInMp3(const char *dir)
+{
+    std::printf("PNG embutido no MP3 (APIC)\n");
+    std::vector<uint8_t> png = readFile((std::string(dir) + "/cover.png").c_str());
+    std::vector<uint8_t> frames;
+    addFrame(frames, 3, "APIC", apicBody(0, "image/png", 3, {0}, png));
+    MemoryReader mp3;
+    mp3.data = id3v2(3, frames, 0);
+    addAudioFrames(mp3.data, 5);
+
+    Mp3Info info;
+    readMp3Info(mp3, info);
+    CHECK_EQ(info.coverFormat == CoverFormat::Png, true);
+
+    std::vector<uint16_t> fromMp3(CoverDecoder::BUFFER_PIXELS), direct(CoverDecoder::BUFFER_PIXELS);
+    CHECK_EQ(CoverDecoder::decode(mp3, info.coverOffset, info.coverSize, fromMp3.data(), false), true);
+    MemoryReader file;
+    file.data = png;
+    CHECK_EQ(CoverDecoder::decode(file, 0, 0, direct.data(), false), true);
+    CHECK_EQ(fromMp3 == direct, true);
+}
+
+// Aplica a "nao sincronizacao" do ID3: um 00 depois de cada FF.
+static std::vector<uint8_t> unsynchronise(const std::vector<uint8_t> &in)
+{
+    std::vector<uint8_t> out;
+    for (uint8_t b : in) {
+        out.push_back(b);
+        if (b == 0xFF) out.push_back(0x00);
+    }
+    return out;
+}
+
+static void checkUnsyncCover(MemoryReader &mp3, const std::vector<uint8_t> &jpeg)
+{
+    Mp3Info info;
+    CHECK_EQ(readMp3Info(mp3, info), true);
+    CHECK_EQ(info.title, std::string("Sincronia"));
+    CHECK_EQ(info.coverFormat == CoverFormat::Jpeg, true);
+    CHECK_EQ(info.coverUnsync, true);
+    CHECK_EQ(info.coverSize, (uint32_t)jpeg.size());   // tamanho sem os 00 extras
+
+    UnsyncReader unsync(mp3, info.coverUnsyncStart, info.coverUnsyncEnd);
+    std::vector<uint16_t> out(CoverDecoder::BUFFER_PIXELS);
+    CHECK_EQ(CoverDecoder::decode(unsync, info.coverOffset, info.coverSize, out.data(), false), true);
+    CHECK_EQ(out == pixels, true);                      // igual a decodificar o JPEG sozinho
+}
+
+static void testUnsynchronisedTags(const std::vector<uint8_t> &jpeg)
+{
+    std::printf("Tag ID3v2.3 inteira nao sincronizada (titulo + capa)\n");
+    {
+        std::vector<uint8_t> frames;
+        addFrame(frames, 3, "TIT2", textBody(0, ascii("Sincronia")));
+        addFrame(frames, 3, "APIC", apicBody(0, "image/jpeg", 3, {0}, jpeg));
+        std::vector<uint8_t> body = unsynchronise(frames);
+        MemoryReader mp3;
+        mp3.data = {'I', 'D', '3', 3, 0, 0x80};          // flag 0x80 = nao sincronizada
+        put32(mp3.data, (uint32_t)body.size(), true);
+        mp3.data.insert(mp3.data.end(), body.begin(), body.end());
+        addAudioFrames(mp3.data, 5);
+        checkUnsyncCover(mp3, jpeg);
+    }
+
+    std::printf("Frame ID3v2.4 nao sincronizado (flag 0x0002 so na capa)\n");
+    {
+        std::vector<uint8_t> frames;
+        addFrame(frames, 4, "TIT2", textBody(3, ascii("Sincronia")));
+        std::vector<uint8_t> pic = unsynchronise(apicBody(0, "image/jpeg", 3, {0}, jpeg));
+        frames.insert(frames.end(), {'A', 'P', 'I', 'C'});
+        put32(frames, (uint32_t)pic.size(), true);       // v2.4: tamanho ja com os 00 extras
+        frames.push_back(0x00); frames.push_back(0x02);  // flags do frame: nao sincronizado
+        frames.insert(frames.end(), pic.begin(), pic.end());
+        MemoryReader mp3;
+        mp3.data = id3v2(4, frames, 0);
+        addAudioFrames(mp3.data, 5);
+        checkUnsyncCover(mp3, jpeg);
+    }
+}
+
 static void testInvalidJpeg()
 {
-    std::printf("JPEG invalido e recusado\n");
+    std::printf("Imagem invalida e recusada\n");
     MemoryReader r;
     r.data = ascii("nao e uma imagem jpeg de verdade................");
-    CHECK_EQ(CoverDecoder::decodeJpeg(r, 0, 0, pixels.data(), false), false);
+    CHECK_EQ(CoverDecoder::decode(r, 0, 0, pixels.data(), false), false);
 }
 
 int main(int argc, char **argv)
@@ -144,6 +276,9 @@ int main(int argc, char **argv)
     testApicInMp3(jpeg);
     testPrefersFrontCover();
     testPngOnly();
+    testOtherFormats("test/host/fixtures");
+    testPngInMp3("test/host/fixtures");
+    testUnsynchronisedTags(jpeg);
     testInvalidJpeg();
 
     std::printf(testFailures() ? "\n%d FALHA(S)\n" : "\nTodos os testes passaram.\n", testFailures());

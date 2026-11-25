@@ -7,7 +7,7 @@ Menu::Menu(Player &p, PlayerView &v, Catalog *c, DeviceControl *d)
     : player(p), view(v), catalog(c), device(d) {}
 
 // -----------------------------------------------------------------------------
-//  Abrir / fechar / navegar
+//  Abrir / fechar
 // -----------------------------------------------------------------------------
 
 void Menu::open()
@@ -35,22 +35,49 @@ void Menu::goTo(Page page, int item)
     render();
 }
 
+// -----------------------------------------------------------------------------
+//  Navegacao
+// -----------------------------------------------------------------------------
+
+void Menu::adjust(int delta)
+{
+    device->setBrightness(device->brightness() + delta * DeviceControl::BRIGHTNESS_STEP);
+    render();
+}
+
 void Menu::rotate(int delta)
 {
     if (!isOpen() || delta == 0) {
         return;
     }
     notice.clear();
-
     if (editingBrightness && device) {
-        device->setBrightness(device->brightness() + delta * DeviceControl::BRIGHTNESS_STEP);
-        render();
+        adjust(delta);
         return;
     }
-
     int count = itemCount();
     selection = ((selection + delta) % count + count) % count;   // da a volta nas pontas
     render();
+}
+
+void Menu::up()
+{
+    if (editingBrightness && device) {
+        notice.clear();
+        adjust(+1);   // Vol aumenta o brilho
+    } else {
+        rotate(-1);
+    }
+}
+
+void Menu::down()
+{
+    if (editingBrightness && device) {
+        notice.clear();
+        adjust(-1);
+    } else {
+        rotate(+1);
+    }
 }
 
 void Menu::back()
@@ -79,6 +106,10 @@ void Menu::select()
         case Page::Settings:  selectSettings(); break;
 
         case Page::Tracks:
+            if ((size_t)selection >= player.trackCount()) {   // ultimo item: Voltar
+                back();
+                return;
+            }
             player.playTrack((size_t)selection);
             close();
             break;
@@ -154,18 +185,37 @@ void Menu::cycleShuffle()
     }
 }
 
+std::vector<Menu::PlaylistItem> Menu::playlistItems() const
+{
+    std::vector<PlaylistItem> items;
+    long fav = catalog ? catalog->favoritesIndex() : -1;
+    items.push_back({PlaylistItem::Favorites, fav});   // sempre aparece, mesmo vazia
+    items.push_back({PlaylistItem::AllTracks, -1});
+    for (size_t i = 0; catalog && i < catalog->playlistCount(); i++) {
+        if ((long)i != fav) {
+            items.push_back({PlaylistItem::Playlist, (long)i});
+        }
+    }
+    items.push_back({PlaylistItem::Back, -1});
+    return items;
+}
+
 void Menu::selectPlaylist()
 {
+    PlaylistItem item = playlistItems()[selection];
+    if (item.kind == PlaylistItem::Back) {
+        back();
+        return;
+    }
     if (!catalog) {
         return;
     }
 
-    // Linha 0 = todas as musicas; linhas seguintes = playlists.
     const TrackSource *list = nullptr;
-    if (selection == 0) {
+    if (item.kind == PlaylistItem::AllTracks) {
         list = &catalog->allTracks();
-    } else {
-        list = catalog->openPlaylist((size_t)(selection - 1));
+    } else if (item.playlist >= 0) {
+        list = catalog->openPlaylist((size_t)item.playlist);
     }
 
     if (!list || list->count() == 0) {
@@ -216,8 +266,8 @@ int Menu::itemCount() const
     switch (currentPage) {
         case Page::Main:      return MAIN_ITEM_COUNT;
         case Page::Settings:  return SETTINGS_ITEM_COUNT;
-        case Page::Playlists: return 1 + (catalog ? (int)catalog->playlistCount() : 0);
-        case Page::Tracks:    return (int)player.trackCount();
+        case Page::Playlists: return (int)playlistItems().size();
+        case Page::Tracks:    return (int)player.trackCount() + 1;   // + Voltar
         default:              return 0;
     }
 }
@@ -247,10 +297,20 @@ std::string Menu::itemText(int item) const
                 default:            return "Voltar";
             }
 
-        case Page::Playlists:
-            return item == 0 ? "Todas as músicas" : catalog->playlistName((size_t)(item - 1));
+        case Page::Playlists: {
+            PlaylistItem p = playlistItems()[item];
+            switch (p.kind) {
+                case PlaylistItem::Favorites: return "Favoritas";
+                case PlaylistItem::AllTracks: return "Todas as músicas";
+                case PlaylistItem::Playlist:  return catalog->playlistName((size_t)p.playlist);
+                default:                      return "Voltar";
+            }
+        }
 
         case Page::Tracks: {
+            if ((size_t)item >= player.trackCount()) {
+                return "Voltar";
+            }
             // "> " marca a que esta carregada no player.
             const char *mark = ((size_t)item == player.trackIndex()) ? "> " : "  ";
             return mark + player.tracks().name((size_t)item);
@@ -268,7 +328,11 @@ std::string Menu::title() const
     }
     switch (currentPage) {
         case Page::Tracks:
-            return "Músicas (" + std::to_string(selection + 1) + "/" + std::to_string(itemCount()) + ")";
+            if ((size_t)selection >= player.trackCount()) {
+                return "Músicas";
+            }
+            return "Músicas (" + std::to_string(selection + 1) + "/" +
+                   std::to_string(player.trackCount()) + ")";
         case Page::Playlists:
             return "Playlists";
         case Page::Settings:

@@ -17,12 +17,26 @@ void ScreenView::trackChanged(const TrackSource &source, size_t index, const Mp3
 
     screen.setMusicInfo(info.title.c_str(), info.artist.c_str(), info.album.c_str());
 
-    // A decodificacao da capa trava o loop por algumas centenas de ms.
-    uint32_t start = millis();
-    bool hasCover = source.loadCover(index, info, screen.coverBuffer());
+    // Mostra a nota agora; a capa e decodificada em poll() se a musica ficar.
+    screen.showCover(false);
+    coverSource = &source;
+    coverIndex = index;
+    coverInfo = info;
+    coverRequestedAt = millis();
+}
+
+void ScreenView::poll(uint32_t nowMs)
+{
+    if (!coverSource || nowMs - coverRequestedAt < COVER_DELAY_MS) {
+        return;
+    }
+    const TrackSource *source = coverSource;
+    coverSource = nullptr;
+
+    bool hasCover = source->loadCover(coverIndex, coverInfo, screen.coverBuffer());
     screen.showCover(hasCover);
     Serial.printf("Capa: %s (%lu ms)\r\n", hasCover ? "ok" : "nenhuma",
-                  (unsigned long)(millis() - start));
+                  (unsigned long)(millis() - nowMs));
 }
 
 void ScreenView::progressChanged(uint32_t elapsed, uint32_t duration)

@@ -7,6 +7,9 @@
 #include "test_util.hpp"
 #include "core/Player.hpp"
 #include "core/Menu.hpp"
+#include "input/Button.hpp"
+#include "input/Encoder.hpp"
+#include "storage/PlaylistPath.hpp"
 
 #include <algorithm>
 #include <string>
@@ -80,6 +83,7 @@ class FakeAudio : public AudioBackend
         uint32_t startedAt = 0;
         int starts = 0, pauses = 0, resumes = 0, stops = 0;
         bool failNext = false;
+        bool failAlways = false;
         bool isPaused = false;
         uint32_t pos = 0;
         bool done = false;
@@ -88,7 +92,7 @@ class FakeAudio : public AudioBackend
         bool start(const std::string &p, const Mp3Info &, uint32_t s) override
         {
             starts++;
-            if (failNext) { failNext = false; return false; }
+            if (failNext || failAlways) { failNext = false; return false; }
             path = p; startedAt = s; pos = s; done = false; isPaused = false;
             return true;
         }
@@ -114,6 +118,11 @@ class FakeCatalog : public Catalog
         const TrackSource &allTracks() const override { return all; }
         size_t playlistCount() const override { return lists.size(); }
         std::string playlistName(size_t i) const override { return names[i]; }
+        long favoritesIndex() const override
+        {
+            for (size_t i = 0; i < names.size(); i++) if (names[i] == "Favoritas") return (long)i;
+            return -1;
+        }
         const TrackSource *openPlaylist(size_t i) override
         {
             return lists[i].count() ? &lists[i] : nullptr;
@@ -431,6 +440,36 @@ static void testAudioError()
     CHECK_EQ(p.isPlaying(), true);
 }
 
+static void testAudioAllFail()
+{
+    std::printf("Audio: nenhum arquivo abre (SD removido) com Repetir Todas: pausa\n");
+    FakeSource src({100, 100, 100}, "Faixa ", true);
+    FakeView view;
+    FakeAudio audio;
+    Player p(view);
+    p.setAudio(&audio);
+    uint32_t now = 0;
+    p.begin(src, now);
+    p.cycleRepeat();                           // Todas: sem a correcao, giraria para sempre
+    audio.failAlways = true;
+    p.togglePlay();
+    run(p, now, 2000);
+    CHECK_EQ(p.isPlaying(), false);
+    CHECK_EQ(view.playing, false);
+    CHECK_EQ(audio.starts, 3);                 // tentou cada musica uma vez e parou
+    run(p, now, 2000);
+    CHECK_EQ(audio.starts, 3);                 // e nao tenta mais sozinho
+
+    // Falhas da lista anterior nao contam na nova: a 1a falha, a 2a toca.
+    FakeSource other({100, 100}, "Outra ", true);
+    audio.failAlways = false;
+    audio.failNext = true;
+    p.setSource(other, 0, true);
+    run(p, now, 200);
+    CHECK_EQ(p.isPlaying(), true);
+    CHECK_EQ(audio.path, std::string("/music/Outra 2.mp3"));
+}
+
 // =============================================================================
 //  Player: aleatorio e troca de lista
 // =============================================================================
@@ -585,14 +624,24 @@ static void testMenuTracks()
     CHECK_EQ(view.menuRows[0], std::string("  Faixa 8"));
     CHECK_EQ(view.menuSelected, 3);
 
-    m.rotate(+9);                              // indice 19: janela no fim (13..19)
-    CHECK_EQ(view.menuRows[0], std::string("  Faixa 14"));
-    CHECK_EQ(view.menuSelected, 6);
+    m.rotate(+9);                              // indice 19: janela no fim (14..20, com Voltar)
+    CHECK_EQ(view.menuRows[0], std::string("  Faixa 15"));
+    CHECK_EQ(view.menuSelected, 5);
 
+    m.rotate(+1);                              // indice 20: Voltar (ultimo item)
+    CHECK_EQ(view.menuRows.back(), std::string("Voltar"));
+    CHECK_EQ(view.menuTitle, std::string("Músicas"));
     m.rotate(+1);                              // volta para o indice 0
     CHECK_EQ(m.selected(), 0);
+    m.up();                                    // Vol sobe: vai para Voltar
+    CHECK_EQ(m.selected(), 20);
+    m.select();                                // Voltar -> pagina principal
+    CHECK_EQ(m.page() == Menu::Page::Main, true);
+    m.select();
+    m.down();                                  // Pos desce
+    CHECK_EQ(m.selected(), 3);
 
-    m.back();                                  // volta para a pagina principal
+    m.back();                                  // Prev: volta para a pagina principal
     CHECK_EQ(m.page() == Menu::Page::Main, true);
     CHECK_EQ(m.selected(), (int)Menu::ITEM_TRACKS);
 
@@ -610,7 +659,7 @@ static void testMenuTracks()
 
 static void testMenuPlaylists()
 {
-    std::printf("Menu: playlists e Favoritar\n");
+    std::printf("Menu: playlists em lista, Vol/Pos e Favoritar\n");
     FakeCatalog cat;
     cat.names = {"Favoritas", "Treino", "Vazia"};
     cat.lists = {FakeSource({100}, "Fav ", true), FakeSource({100, 100, 100}, "Treino ", true),
@@ -621,23 +670,26 @@ static void testMenuPlaylists()
     p.begin(cat.all, 0);
 
     m.open();
-    m.rotate(+Menu::ITEM_PLAYLISTS);
-    m.select();
+    m.down(); m.select();                      // Pos desce ate Playlists e escolhe
     CHECK_EQ(m.page() == Menu::Page::Playlists, true);
-    std::vector<std::string> expected = {"Todas as músicas", "Favoritas", "Treino", "Vazia"};
-    CHECK_EQ(view.menuRows, expected);
+    std::vector<std::string> expected = {"Favoritas", "Todas as músicas", "Treino", "Vazia", "Voltar"};
+    CHECK_EQ(view.menuRows, expected);         // Favoritas primeiro, Voltar no fim
 
-    m.rotate(+3);                              // Vazia
+    m.down(); m.down(); m.down();              // Vazia
     m.select();
     CHECK_EQ(view.menuTitle, std::string("Playlist vazia"));
     CHECK_EQ(m.isOpen(), true);
 
-    m.rotate(-1);                              // Treino
+    m.up();                                    // Vol sobe: Treino
     m.select();
     CHECK_EQ(m.isOpen(), false);
     CHECK_EQ(p.trackCount(), (size_t)3);
     CHECK_EQ(view.trackTitle, std::string("Treino 1"));
     CHECK_EQ(p.isPlaying(), true);
+
+    m.open(); m.down(); m.select();
+    m.select();                                // Favoritas
+    CHECK_EQ(view.trackTitle, std::string("Fav 1"));
 
     // Favoritar a musica atual (uma vez so).
     m.open();
@@ -645,17 +697,28 @@ static void testMenuPlaylists()
     m.select();
     CHECK_EQ(view.menuTitle, std::string("Adicionada às Favoritas"));
     CHECK_EQ(cat.favorites.size(), (size_t)1);
-    CHECK_EQ(cat.favorites[0], std::string("/music/Treino 1.mp3"));
+    CHECK_EQ(cat.favorites[0], std::string("/music/Fav 1.mp3"));
     m.select();
     CHECK_EQ(view.menuTitle, std::string("Já está nas Favoritas"));
-    m.rotate(+1);
+    m.down();
     CHECK_EQ(view.menuTitle, std::string("Menu"));   // aviso some na proxima acao
 
-    // Voltar da pagina Playlists cai no item Playlists.
+    // Item Voltar da pagina Playlists volta para o item Playlists.
     m.rotate(-(Menu::ITEM_SETTINGS - Menu::ITEM_PLAYLISTS));
     m.select();
-    m.back();
+    m.up();                                    // da a volta: ultimo item (Voltar)
+    m.select();
+    CHECK_EQ(m.page() == Menu::Page::Main, true);
     CHECK_EQ(m.selected(), (int)Menu::ITEM_PLAYLISTS);
+
+    // Sem Favoritas.m3u a linha continua la, mas avisa que esta vazia.
+    FakeCatalog empty;
+    Menu m2(p, view, &empty, nullptr);
+    m2.open(); m2.down(); m2.select();
+    std::vector<std::string> few = {"Favoritas", "Todas as músicas", "Voltar"};
+    CHECK_EQ(view.menuRows, few);
+    m2.select();
+    CHECK_EQ(view.menuTitle, std::string("Playlist vazia"));
 }
 
 static void testMenuSettings()
@@ -711,8 +774,117 @@ static void testMenuSettings()
     CHECK_EQ(m.selected(), (int)Menu::ITEM_SETTINGS);
 }
 
+// =============================================================================
+//  Botao: toque simples x toque duplo
+// =============================================================================
+
+// Simula o pino a cada 5 ms. 'pressedAt' diz se o botao esta apertado no instante t.
+template <typename F>
+static std::vector<std::pair<ButtonEvent, uint32_t>> runButton(Button &b, uint32_t untilMs, F pressedAt)
+{
+    std::vector<std::pair<ButtonEvent, uint32_t>> events;
+    for (uint32_t t = 1000; t <= 1000 + untilMs; t += 5) {
+        ButtonEvent e = b.update(pressedAt(t - 1000), t);
+        if (e != ButtonEvent::None) events.push_back({e, t - 1000});
+    }
+    return events;
+}
+
+static void testButton()
+{
+    std::printf("Botao: toque simples, toque duplo e repique\n");
+    {
+        Button b(0, 400);   // toque simples: Click so depois da janela
+        auto ev = runButton(b, 1500, [](uint32_t t) { return t < 100; });
+        CHECK_EQ(ev.size(), (size_t)1);
+        CHECK_EQ(ev[0].first == ButtonEvent::Click, true);
+        CHECK_EQ(ev[0].second >= 500u, true);          // soltou em ~130 + 400
+    }
+    {
+        Button b(0, 400);   // toque duplo: so DoubleClick, nunca Click
+        auto ev = runButton(b, 2000, [](uint32_t t) {
+            return t < 80 || (t >= 200 && t < 300);
+        });
+        CHECK_EQ(ev.size(), (size_t)1);
+        CHECK_EQ(ev[0].first == ButtonEvent::DoubleClick, true);
+    }
+    {
+        Button b(0, 400);   // 2o toque tarde demais: dois toques simples
+        auto ev = runButton(b, 3000, [](uint32_t t) {
+            return t < 80 || (t >= 1000 && t < 1080);
+        });
+        CHECK_EQ(ev.size(), (size_t)2);
+        CHECK_EQ(ev[0].first == ButtonEvent::Click, true);
+        CHECK_EQ(ev[1].first == ButtonEvent::Click, true);
+    }
+    {
+        Button b(0, 400);   // repique de 10 ms no meio do aperto nao vira toque duplo
+        auto ev = runButton(b, 1500, [](uint32_t t) {
+            return t < 200 && !(t >= 100 && t < 110);
+        });
+        CHECK_EQ(ev.size(), (size_t)1);
+        CHECK_EQ(ev[0].first == ButtonEvent::Click, true);
+    }
+    {
+        Button b(0);        // botao simples: Click na hora do aperto
+        auto ev = runButton(b, 500, [](uint32_t t) { return t >= 50 && t < 150; });
+        CHECK_EQ(ev.size(), (size_t)1);
+        CHECK_EQ(ev[0].first == ButtonEvent::Click, true);
+        CHECK_EQ(ev[0].second < 100u, true);
+    }
+}
+
+// =============================================================================
+//  Encoder: tabela de 4 estados
+// =============================================================================
+
+// Passa uma sequencia de estados (bit 1 = pino A, bit 0 = pino B) e devolve os passos.
+static int runEncoder(std::initializer_list<int> states)
+{
+    Encoder e(0, 0);
+    for (int s : states) e.step((s & 2) != 0, (s & 1) != 0);
+    return e.takeSteps();
+}
+
+static void testEncoder()
+{
+    std::printf("Encoder: sentido, repique e meio passo\n");
+    CHECK_EQ(runEncoder({3, 1, 0, 2, 3}), +1);                  // horario (A desce antes de B)
+    CHECK_EQ(runEncoder({3, 2, 0, 1, 3}), -1);                  // anti-horario
+    CHECK_EQ(runEncoder({3, 1, 0, 2, 3, 1, 0, 2, 3}), +2);      // dois cliques
+    CHECK_EQ(runEncoder({3, 1, 3, 1, 3, 1, 0, 2, 3}), +1);      // repique em A no comeco: 1 so
+    CHECK_EQ(runEncoder({3, 1, 0, 2, 0, 2, 3}), +1);            // repique em A no fim: 1 so
+    CHECK_EQ(runEncoder({3, 1, 0, 1, 3}), 0);                   // meio passo e volta: nada
+}
+
+// =============================================================================
+//  Playlists: linha do .m3u -> caminho
+// =============================================================================
+
+static void testPlaylistPaths()
+{
+    std::printf("Playlist .m3u: caminhos absolutos, relativos, Windows, BOM e comentarios\n");
+    const std::string folder = "/playlists";
+    CHECK_EQ(m3uLineToPath("/music/a.mp3", folder), std::string("/music/a.mp3"));
+    CHECK_EQ(m3uLineToPath("../music/a.mp3", folder), std::string("/music/a.mp3"));
+    CHECK_EQ(m3uLineToPath("a.mp3", folder), std::string("/playlists/a.mp3"));
+    CHECK_EQ(m3uLineToPath("./sub/../a.mp3", folder), std::string("/playlists/a.mp3"));
+    CHECK_EQ(m3uLineToPath("..\\music\\Minha Musica.mp3", folder), std::string("/music/Minha Musica.mp3"));
+    CHECK_EQ(m3uLineToPath("D:\\Musicas\\a.mp3", folder), std::string("/playlists/D:/Musicas/a.mp3"));
+    CHECK_EQ(m3uLineToPath("  /music//a.mp3 \r", folder), std::string("/music/a.mp3"));
+    CHECK_EQ(m3uLineToPath("\xEF\xBB\xBF/music/a.mp3", folder), std::string("/music/a.mp3"));
+    CHECK_EQ(m3uLineToPath("../../../a.mp3", folder), std::string("/a.mp3"));   // nao sobe acima da raiz
+    CHECK_EQ(m3uLineToPath("#EXTM3U", folder), std::string());
+    CHECK_EQ(m3uLineToPath("#EXTINF:123,Artista - Musica", folder), std::string());
+    CHECK_EQ(m3uLineToPath("   \r", folder), std::string());
+    CHECK_EQ(m3uLineToPath("", folder), std::string());
+}
+
 int main()
 {
+    testButton();
+    testEncoder();
+    testPlaylistPaths();
     testBegin();
     testNextPrevious();
     testModes();
@@ -722,6 +894,7 @@ int main()
     testAudioPlayback();
     testAudioSeek();
     testAudioError();
+    testAudioAllFail();
     testShuffle();
     testShuffleAllAndSource();
     testMenuMain();

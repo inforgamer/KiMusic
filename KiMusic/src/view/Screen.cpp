@@ -99,7 +99,7 @@ void Screen::init()
 
     ui_init();
 
-    // Largura fixa e reticencias para nomes longos.
+    // Largura fixa; artista e album longos terminam em reticencias.
     constexpr lv_coord_t textWidth = 130;
     lv_obj_t *labels[] = { ui_MusicName, ui_Band, ui_Album };
     for (lv_obj_t *label : labels) {
@@ -107,6 +107,8 @@ void Screen::init()
         lv_obj_set_x(label, 75);
         lv_label_set_long_mode(label, LV_LABEL_LONG_DOT);
     }
+    // Nome da musica longo rola em loop (efeito letreiro) em vez de cortar com "...".
+    lv_label_set_long_mode(ui_MusicName, LV_LABEL_LONG_SCROLL_CIRCULAR);
 
     lv_obj_add_flag(ui_volume, LV_OBJ_FLAG_HIDDEN);   // aparece so no modo volume
 

@@ -2,6 +2,7 @@
 //  storage/SdCatalog.cpp  -  Implementacao (ver SdCatalog.hpp)
 // =============================================================================
 #include "storage/SdCatalog.hpp"
+#include "storage/PlaylistPath.hpp"
 
 #include <algorithm>
 
@@ -24,6 +25,9 @@ size_t SdCatalog::scan()
 void SdCatalog::scanPlaylists()
 {
     playlistFiles.clear();
+    if (!fs.exists(playlistFolder)) {
+        return;     // exists() nao gera log de erro; open() de pasta inexistente gera
+    }
 
     File dir = fs.open(playlistFolder);
     if (!dir || !dir.isDirectory()) {
@@ -63,6 +67,16 @@ std::string SdCatalog::playlistName(size_t index) const
     return std::string(TrackList::baseName(playlistFiles[index]).c_str());
 }
 
+long SdCatalog::favoritesIndex() const
+{
+    for (size_t i = 0; i < playlistFiles.size(); i++) {
+        if (TrackList::baseName(playlistFiles[i]) == favoritesName) {
+            return (long)i;
+        }
+    }
+    return -1;
+}
+
 // -----------------------------------------------------------------------------
 //  Abrir uma playlist
 // -----------------------------------------------------------------------------
@@ -92,14 +106,11 @@ bool SdCatalog::readPlaylist(const String &m3uPath, std::vector<String> &out) co
 
     while (file.available() && out.size() < TrackList::MAX_TRACKS) {
         String line = file.readStringUntil('\n');
-        line.trim();                                   // tira \r e espacos
-        if (line.startsWith("\xEF\xBB\xBF")) {         // BOM do UTF-8
-            line = line.substring(3);
+        std::string path = m3uLineToPath(line.c_str(), playlistFolder.c_str());
+        if (path.empty()) {
+            continue;   // linha vazia ou comentario
         }
-        if (line.length() == 0 || line.startsWith("#")) {
-            continue;
-        }
-        String resolved = resolve(line);
+        String resolved = resolve(String(path.c_str()));
         if (resolved.length() > 0) {
             out.push_back(resolved);
         }
@@ -108,35 +119,9 @@ bool SdCatalog::readPlaylist(const String &m3uPath, std::vector<String> &out) co
     return true;
 }
 
-// Converte uma linha do .m3u em caminho absoluto existente ("" se nao achar).
-String SdCatalog::resolve(const String &line) const
+// Caminho ja normalizado (m3uLineToPath) -> arquivo que existe no SD ("" se nao achar).
+String SdCatalog::resolve(const String &normalized) const
 {
-    String path = line;
-    path.replace('\\', '/');
-
-    if (!path.startsWith("/")) {
-        path = playlistFolder + "/" + path;
-    }
-
-    // Resolve "." e ".." (ex.: /playlists/../music/a.mp3 -> /music/a.mp3).
-    std::vector<String> parts;
-    int start = 1;
-    while (start <= (int)path.length()) {
-        int slash = path.indexOf('/', start);
-        if (slash < 0) slash = path.length();
-        String part = path.substring(start, slash);
-        if (part == "..") {
-            if (!parts.empty()) parts.pop_back();
-        } else if (part.length() > 0 && part != ".") {
-            parts.push_back(part);
-        }
-        start = slash + 1;
-    }
-    String normalized;
-    for (const String &part : parts) {
-        normalized += "/" + part;
-    }
-
     if (fs.exists(normalized)) {
         return normalized;
     }
@@ -170,12 +155,27 @@ bool SdCatalog::addToFavorites(const TrackSource &source, size_t index)
         fs.mkdir(playlistFolder);
     }
     bool isNew = !fs.exists(favPath);
+
+    // Arquivo editado no PC pode terminar sem quebra de linha: sem isto, a nova
+    // musica seria colada na ultima linha e as duas sumiriam da playlist.
+    bool needsNewline = false;
+    if (!isNew) {
+        File existing = fs.open(favPath);
+        if (existing && existing.size() > 0 && existing.seek(existing.size() - 1)) {
+            needsNewline = existing.read() != '\n';
+        }
+        existing.close();
+    }
+
     File file = fs.open(favPath, FILE_APPEND);
     if (!file) {
         return false;
     }
     if (isNew) {
         file.println("#EXTM3U");
+    }
+    if (needsNewline) {
+        file.println();
     }
     file.println(target);
     file.close();

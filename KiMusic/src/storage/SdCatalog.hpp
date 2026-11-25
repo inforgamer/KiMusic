@@ -40,6 +40,7 @@ class SdCatalog : public Catalog
         const TrackSource &allTracks() const override { return all; }
         size_t playlistCount() const override { return playlistFiles.size(); }
         std::string playlistName(size_t index) const override;
+        long favoritesIndex() const override;
         const TrackSource *openPlaylist(size_t index) override;
         bool addToFavorites(const TrackSource &source, size_t index) override;
 
@@ -55,7 +56,7 @@ class SdCatalog : public Catalog
 
         void scanPlaylists();
         bool readPlaylist(const String &m3uPath, std::vector<String> &out) const;
-        String resolve(const String &line) const;
+        String resolve(const String &normalized) const;
 };
 
 #endif

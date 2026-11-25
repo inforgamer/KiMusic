@@ -21,8 +21,8 @@
 enum class CoverFormat : uint8_t
 {
     None,    // sem capa embutida
-    Jpeg,    // suportado pelo CoverDecoder
-    Png,     // detectado, mas ainda nao decodificado
+    Jpeg,    // suportado pelo CoverDecoder (comum e progressivo)
+    Png,     // suportado pelo CoverDecoder
     Other
 };
 
@@ -38,6 +38,12 @@ struct Mp3Info
     CoverFormat coverFormat = CoverFormat::None;
     uint32_t coverOffset = 0;   // byte do arquivo onde a imagem comeca
     uint32_t coverSize = 0;     // tamanho da imagem em bytes
+
+    // Capa "nao sincronizada" (ver UnsyncReader): coverOffset/coverSize sao entao
+    // posicoes dentro de UnsyncReader(arquivo, coverUnsyncStart, coverUnsyncEnd).
+    bool coverUnsync = false;
+    uint32_t coverUnsyncStart = 0;
+    uint32_t coverUnsyncEnd = 0;
 
     // Audio: onde comeca o primeiro frame MPEG e quantos bytes de audio ha
     // ate o fim (sem a tag ID3v1). Usado para converter segundos em bytes

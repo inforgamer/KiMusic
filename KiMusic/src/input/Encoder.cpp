@@ -1,27 +1,33 @@
 // =============================================================================
-//  input/Encoder.cpp  -  Implementacao (ver Encoder.hpp)
+//  input/Encoder.cpp  -  Pinos e interrupcao (a logica esta em Encoder.hpp)
 // =============================================================================
 #include "input/Encoder.hpp"
 
-Encoder::Encoder(uint8_t a, uint8_t b) : pinA(a), pinB(b) {}
+#include <Arduino.h>
+
+static Encoder *instance = nullptr;
+static uint8_t isrPinA, isrPinB;
+
+static void IRAM_ATTR onChange()
+{
+    instance->step(digitalRead(isrPinA) == HIGH, digitalRead(isrPinB) == HIGH);
+}
 
 void Encoder::begin()
 {
     pinMode(pinA, INPUT_PULLUP);
     pinMode(pinB, INPUT_PULLUP);
-    lastState = digitalRead(pinA);
+    instance = this;
+    isrPinA = pinA;
+    isrPinB = pinB;
+    attachInterrupt(pinA, onChange, CHANGE);
+    attachInterrupt(pinB, onChange, CHANGE);
 }
 
 int Encoder::readRotate()
 {
-    int stateA = digitalRead(pinA);
-    if (stateA == lastState) {
-        return 0;
-    }
-    lastState = stateA;
-
-    if (stateA != LOW) {
-        return 0;   // so a borda de descida conta
-    }
-    return (digitalRead(pinB) != stateA) ? 1 : -1;
+    noInterrupts();
+    int steps = takeSteps();
+    interrupts();
+    return steps;
 }
