@@ -46,14 +46,14 @@ A pinagem completa está em [`KiMusic/Documentação/Pinagem.md`](KiMusic/Docume
 
 | Botão | Menu fechado | Menu aberto |
 | :--- | :--- | :--- |
-| **Encoder (girar)** | Volume ou posição, conforme o modo | Move a seleção (ou ajusta o brilho) |
+| **Encoder (girar)** | Volume ou posição, conforme o modo | — (no menu só os botões navegam) |
 | **Central (clique)** | Play / Pause | Escolhe o item |
 | **Central (toque duplo)** | Abre o menu (não pausa nem dá Play) | Fecha o menu |
 | **Central (segurar 2 s, desligado)** | Liga | — |
 | **Vol** (cima) | Liga/desliga o modo Volume (mostra a barra) | Sobe (no brilho: aumenta) |
 | **Pos** (baixo) | Liga/desliga o modo Posição (5 s por passo) | Desce (no brilho: diminui) |
 | **Prev** (esquerda) | Volta ao início da música; se ela acabou de começar, vai para a anterior | Volta uma página |
-| **Next** (direita) | Próxima música | — |
+| **Next** (direita) | Próxima música | Escolhe o item (como o central) |
 
 ### Menu
 
@@ -65,13 +65,16 @@ Menu
  ├─ Repetir: <modo> ......... Desligado → Todas → Uma
  ├─ Favoritar música ........ adiciona a música atual na playlist "Favoritas"
  ├─ Configurações
- │   ├─ Brilho: NN% ......... clique, gire para ajustar (10% a 100%), clique para salvar
+ │   ├─ Brilho: NN% ......... clique, Vol/Pos ajustam (10% a 100%), clique para salvar
  │   ├─ Desligar tela ....... apaga só a tela; a música continua (qualquer botão acende)
+ │   ├─ Modo USB (PC) ....... o cartão vira pendrive no PC; ejete no PC (ou aperte Prev) para voltar
  │   ├─ Desligar ............ desliga o aparelho (para ligar: segurar o central 2 s)
  │   └─ Voltar
  └─ Voltar .................. fecha o menu
 ```
 
+* **Modo USB:** ligue o USB-C no PC e escolha Configurações → Modo USB. A música para e o cartão aparece no Windows como unidade: copie as músicas e rode `python tools/fetch_covers.py E:\`. Ejete a unidade no Windows; o player lê o cartão de novo e volta para a tela de músicas. Apertar Prev (ou tirar o cabo) também sai, mas sem ejetar pode corromper o cartão.
+* **Bateria:** a porcentagem aparece no canto superior direito (raio = cabo ligado). No Wokwi, o potenciômetro "Bateria" e a chave "Cabo USB" fazem esse papel.
 * **Aleatório Playlist:** embaralha a lista atual. **Geral:** passa para todas as músicas do SD e embaralha.
 * **Repetir Desligado:** no fim da lista volta para a primeira música e pausa. **Todas:** continua tocando. **Uma:** repete a atual.
 * Brilho, volume e Repetir ficam salvos e voltam iguais ao ligar.

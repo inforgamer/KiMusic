@@ -41,7 +41,9 @@
       "top": 265,
       "left": 340,
       "attrs": { "color": "yellow", "label": "Next" }
-    }
+    },
+    { "type": "wokwi-potentiometer", "id": "pot_bat", "top": 110, "left": 420, "attrs": { "label": "Bateria" } },
+    { "type": "wokwi-slide-switch", "id": "sw_usb", "top": 400, "left": 400, "attrs": { "label": "Cabo USB" } }
   ],
   "connections": [
     [ "esp:TX", "$serialMonitor:RX", "", [] ],
@@ -73,7 +75,13 @@
     [ "btn_left:2.l", "esp:GND.1", "black", [ "v50", "h-460", "v-190" ] ],
     [ "btn_right:1.l", "esp:8", "gray", [ "v80", "h-680", "v-200" ] ],
     [ "btn_right:2.l", "esp:GND.1", "black", [ "v90", "h-690", "v-190" ] ],
-    [ "lcd1:MISO", "esp:13", "green", [ "h-105.6", "v-144.01", "h-326.4", "v249.6" ] ]
+    [ "lcd1:MISO", "esp:13", "green", [ "h-105.6", "v-144.01", "h-326.4", "v249.6" ] ],
+    [ "pot_bat:SIG", "esp:1", "orange", [] ],
+    [ "pot_bat:VCC", "esp:3V3", "red", [] ],
+    [ "pot_bat:GND", "esp:GND.1", "black", [] ],
+    [ "sw_usb:2", "esp:2", "orange", [] ],
+    [ "sw_usb:1", "esp:GND.1", "black", [] ],
+    [ "sw_usb:3", "esp:3V3", "red", [] ]
   ],
   "dependencies": {}
 }

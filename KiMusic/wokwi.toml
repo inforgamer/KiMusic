@@ -1,6 +1,6 @@
 [wokwi]
 version = 1
-firmware = ".pio/build/esp32-s3-devkitc-1/firmware.bin"
+firmware = ".pio/build/wokwi/firmware.bin"   # [env:wokwi] do platformio.ini: sem audio
 
 # Cartao SD simulado: a pasta wokwi-sd/ e copiada para ele a cada inicio da simulacao.
 # Ela e gerada a cada build por tools/wokwi_sd.py: o SD/ com cada MP3 cortado (o Wokwi

@@ -143,6 +143,7 @@ class FakeDevice : public DeviceControl
         int level = 80;
         int powerOffs = 0;
         int saves = 0;
+        int usbModes = 0;
         bool screenIsOff = false;
 
         int brightness() const override { return level; }
@@ -154,6 +155,7 @@ class FakeDevice : public DeviceControl
         void screenOn() override { screenIsOff = false; }
         bool isScreenOff() const override { return screenIsOff; }
         void saveSettings() override { saves++; }
+        void usbMode() override { usbModes++; }
         void powerOff() override { powerOffs++; }
 };
 
@@ -738,7 +740,7 @@ static void testMenuSettings()
     m.rotate(+Menu::ITEM_SETTINGS);
     m.select();
     CHECK_EQ(m.page() == Menu::Page::Settings, true);
-    std::vector<std::string> expected = {"Brilho: 80%", "Desligar tela", "Desligar", "Voltar"};
+    std::vector<std::string> expected = {"Brilho: 80%", "Desligar tela", "Modo USB (PC)", "Desligar", "Voltar"};
     CHECK_EQ(view.menuRows, expected);
 
     m.select();                                // entra na edicao do brilho
@@ -768,6 +770,14 @@ static void testMenuSettings()
     m.rotate(+Menu::SET_POWER_OFF);            // Desligar
     m.select();
     CHECK_EQ(dev.powerOffs, 1);
+    CHECK_EQ(m.isOpen(), false);
+
+    m.open();
+    m.rotate(+Menu::ITEM_SETTINGS);
+    m.select();
+    m.rotate(+Menu::SET_USB);                  // Modo USB
+    m.select();
+    CHECK_EQ(dev.usbModes, 1);
     CHECK_EQ(m.isOpen(), false);
 
     m.open();

@@ -13,13 +13,14 @@
 //    Prev (esquerda) ....... musica anterior / volta ao inicio
 //    Next (direita) ........ proxima musica
 //
-//  Menu aberto:
-//    encoder ............... move a selecao (ou ajusta o brilho em edicao)
+//  Menu aberto (o giro do encoder nao faz nada; so o botao dele, o central):
 //    Vol / Pos ............. sobe / desce (no brilho em edicao: mais / menos)
 //    Prev .................. volta uma pagina
-//    toque central ......... escolhe
+//    Next / toque central .. escolhe
 //    toque duplo central ... fecha o menu
-//    Next .................. ignorado
+//
+//  Os botoes sao lidos numa tarefa a cada 5 ms (nao no loop): o loop pode demorar
+//  redesenhando a tela sem perder um toque rapido nem estourar a janela do toque duplo.
 //
 //  Desligar e so pelo menu (Configuracoes > Desligar). Para ligar: segurar o
 //  central 2 s (ver system/Power).
@@ -28,6 +29,9 @@
 // =============================================================================
 #ifndef APP_HPP
 #define APP_HPP
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 #include "core/Player.hpp"
 #include "core/Menu.hpp"
@@ -40,8 +44,9 @@ class App
     public:
         App(Player &player, Menu &menu, DeviceControl &device);
 
-        void begin();                  // configura os pinos
+        void begin();                  // configura os pinos e inicia a leitura dos botoes
         void poll(uint32_t nowMs);     // chamar no loop
+        void discardInput();           // esquece os toques ainda nao tratados
 
     private:
         Player &player;
@@ -55,16 +60,15 @@ class App
         Button volumeButton;
         Button positionButton;
 
-        // Leituras de uma volta do loop (todos os botoes sao lidos sempre,
-        // para o debounce de cada um continuar correto).
+        // Toques desde a ultima volta do loop.
         struct Input
         {
-            int rotation;
-            ButtonEvent center;
-            bool previous;
-            bool next;
-            bool volume;
-            bool position;
+            int rotation = 0;
+            ButtonEvent center = ButtonEvent::None;
+            bool previous = false;
+            bool next = false;
+            bool volume = false;
+            bool position = false;
 
             bool any() const
             {
@@ -72,6 +76,12 @@ class App
                        previous || next || volume || position;
             }
         };
+
+        // Preenchido pela tarefa de leitura; o loop pega e zera (protegido por inputLock).
+        Input pending;
+        portMUX_TYPE inputLock = portMUX_INITIALIZER_UNLOCKED;
+        static void inputTask(void *self);
+        void sampleButtons();
 
         Input readInput();
         void handleMenu(const Input &in);

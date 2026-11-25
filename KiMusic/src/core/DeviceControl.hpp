@@ -24,6 +24,7 @@ class DeviceControl
         virtual bool isScreenOff() const = 0;
 
         virtual void saveSettings() = 0;               // grava volume e Repetir (o brilho ja e gravado)
+        virtual void usbMode() = 0;                    // cartao vira pendrive no PC (bloqueia ate sair)
         virtual void powerOff() = 0;                   // salva tudo e desliga (nao retorna na placa)
 };
 

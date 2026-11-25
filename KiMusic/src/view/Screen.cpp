@@ -109,6 +109,9 @@ void Screen::init()
     }
     // Nome da musica longo rola em loop (efeito letreiro) em vez de cortar com "...".
     lv_label_set_long_mode(ui_MusicName, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    // Altura de uma linha: a rolagem redesenha o titulo a cada quadro, e com a altura
+    // automatica a area ia ate a linha do album (150x41 px em vez de 130x22).
+    lv_obj_set_height(ui_MusicName, lv_font_get_line_height(&lv_font_montserrat_18));
 
     lv_obj_add_flag(ui_volume, LV_OBJ_FLAG_HIDDEN);   // aparece so no modo volume
 
@@ -165,7 +168,9 @@ void Screen::setBrightness(int percent)
 
 void Screen::showMessage(const char *text)
 {
+    hideMessage();
     lv_obj_t *overlay = lv_obj_create(lv_layer_top());
+    messageOverlay = overlay;
     lv_obj_set_size(overlay, WIDTH, HEIGHT);
     lv_obj_center(overlay);
     lv_obj_set_style_radius(overlay, 0, LV_PART_MAIN);
@@ -180,6 +185,14 @@ void Screen::showMessage(const char *text)
     lv_obj_center(label);
 
     lv_refr_now(nullptr);   // desenha agora (o loop pode nao rodar mais)
+}
+
+void Screen::hideMessage()
+{
+    if (messageOverlay) {
+        lv_obj_del(messageOverlay);
+        messageOverlay = nullptr;
+    }
 }
 
 void Screen::powerDown()
@@ -317,6 +330,13 @@ void Screen::setStatus(bool playing, PlayerMode mode)
     }
 
     setHighlight(ui_Prog, mode == PlayerMode::Position);
+}
+
+void Screen::setBattery(int percent, bool charging)
+{
+    char text[16];
+    snprintf(text, sizeof(text), "%s%d%%", charging ? LV_SYMBOL_CHARGE " " : "", percent);
+    lv_label_set_text(ui_Time1, text);
 }
 
 void Screen::setVolume(int volume)

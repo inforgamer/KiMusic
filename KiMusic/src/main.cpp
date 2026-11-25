@@ -40,7 +40,8 @@ DemoSource demo;
 AudioEngine audio(SD, Config::PIN_I2S_BCK, Config::PIN_I2S_LRCK,
                   Config::PIN_I2S_DOUT, Config::PIN_DAC_MUTE);
 Player player(view);
-Device device(screen, player, audio, Config::PIN_CENTER);
+Device device(screen, player, audio, Config::PIN_CENTER, Config::PIN_PREVIOUS,
+              Config::PIN_BATTERY, Config::PIN_USB_VBUS);
 Menu menu(player, view, &catalog, &device);
 App app(player, menu, device);
 
@@ -65,6 +66,13 @@ static bool initSD()
     return found > 0;
 }
 
+// Lista que o player toca: as musicas do SD ou, sem elas, a demo.
+static const TrackSource &library(bool hasMusic)
+{
+    return hasMusic ? static_cast<const TrackSource &>(catalog.allTracks())
+                    : static_cast<const TrackSource &>(demo);
+}
+
 void setup()
 {
     // Acordou pelo botao? So liga se ele ficar 2 s apertado.
@@ -79,15 +87,14 @@ void setup()
     app.begin();
     audio.begin();
 
-    player.setAudio(&audio);
+#ifndef KIMUSIC_NO_AUDIO
+    player.setAudio(&audio);   // sem isto o Player conta o tempo sozinho (como na demo)
+#endif
     player.setRandomSeed(esp_random());
 
     bool hasMusic = initSD();
     device.begin();   // brilho, volume e Repetir salvos
-
-    const TrackSource &source = hasMusic ? static_cast<const TrackSource &>(catalog.allTracks())
-                                         : static_cast<const TrackSource &>(demo);
-    player.begin(source, millis());
+    player.begin(library(hasMusic), millis());
 }
 
 void loop()
@@ -95,5 +102,13 @@ void loop()
     screen.update();
     app.poll(millis());
     view.poll(millis());
+    device.update(millis());
+
+    if (device.takeCardChanged()) {   // voltou do modo USB: remonta o SD (o FAT em cache esta velho)
+        SD.end();
+        player.begin(library(initSD()), millis());
+        screen.hideMessage();
+        app.discardInput();   // o aperto que saiu do modo USB nao vale como comando
+    }
     delay(5);   // botoes tem debounce de 30 ms e o encoder e por interrupcao: 200 Hz basta
 }

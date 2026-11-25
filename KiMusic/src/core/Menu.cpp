@@ -245,6 +245,13 @@ void Menu::selectSettings()
             }
             break;
 
+        case SET_USB:
+            close();
+            if (device) {
+                device->usbMode();
+            }
+            break;
+
         case SET_POWER_OFF:
             close();
             if (device) {
@@ -294,6 +301,7 @@ std::string Menu::itemText(int item) const
                     return editingBrightness ? "Brilho: < " + value + " >" : "Brilho: " + value;
                 }
                 case SET_SCREEN_OFF: return "Desligar tela";
+                case SET_USB:        return "Modo USB (PC)";
                 case SET_POWER_OFF:  return "Desligar";
                 default:            return "Voltar";
             }
@@ -337,7 +345,7 @@ std::string Menu::title() const
         case Page::Playlists:
             return "Playlists";
         case Page::Settings:
-            return editingBrightness ? "Gire para ajustar" : "Configurações";
+            return editingBrightness ? "Vol/Pos ajustam" : "Configurações";
         default:
             return "Menu";
     }

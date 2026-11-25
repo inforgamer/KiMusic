@@ -44,6 +44,7 @@ class Screen
         void initBacklight(uint8_t pin, uint8_t ledcChannel);
         void setBrightness(int percent);     // 0..100
         void showMessage(const char *text);  // tela cheia, desenhada na hora (ex.: "Desligando...")
+        void hideMessage();
         void powerDown();                    // apaga a luz e poe o ILI9341 para dormir
         void wakeUp(int brightness);         // acorda o ILI9341, redesenha e reacende a luz
 
@@ -52,6 +53,7 @@ class Screen
         void setVolume(int volume);
         void setProgress(uint32_t elapsed, uint32_t duration);
         void setStatus(bool playing, PlayerMode mode);
+        void setBattery(int percent, bool charging);   // canto superior direito
 
         // ---- Capa ----
         // Quem chama decodifica a imagem em coverBuffer() e depois chama showCover(true).
@@ -76,6 +78,7 @@ class Screen
         uint32_t lastTick = 0;
 
         int backlightChannel = -1;   // canal LEDC da luz de fundo (-1 = sem controle)
+        lv_obj_t *messageOverlay = nullptr;
 
         // Capa: imagem desenhada por cima de ui_AlbumCover.
         lv_color_t coverPixels[CoverDecoder::BUFFER_PIXELS];

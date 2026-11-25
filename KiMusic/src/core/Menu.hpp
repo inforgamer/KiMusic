@@ -70,6 +70,7 @@ class Menu
         {
             SET_BRIGHTNESS = 0,
             SET_SCREEN_OFF,
+            SET_USB,
             SET_POWER_OFF,
             SET_BACK,
             SETTINGS_ITEM_COUNT

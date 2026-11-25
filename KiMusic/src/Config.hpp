@@ -29,6 +29,11 @@ namespace Config
                                                   // (se der erro de leitura com fios longos, baixe para 10 MHz)
     constexpr uint8_t PIN_BACKLIGHT = 21;   // LED do display (PWM = brilho)
 
+    // ---- Bateria e USB-C ----
+    constexpr uint8_t PIN_BATTERY   = 1;    // ADC: bateria por divisor 100k/100k (metade da tensao)
+    constexpr uint8_t PIN_USB_VBUS  = 2;    // 5 V do USB-C por divisor 100k/100k: HIGH = cabo ligado
+                                            // (dados USB: D- = GPIO 19, D+ = GPIO 20, fixos no S3)
+
     // ---- DAC PCM5102A (I2S) ----
     constexpr uint8_t PIN_I2S_BCK   = 40;   // BCK
     constexpr uint8_t PIN_I2S_LRCK  = 41;   // LCK / LRCK

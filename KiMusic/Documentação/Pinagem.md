@@ -93,6 +93,25 @@ Não há botão de energia separado.
 
 ---
 
+## 🔋 7. Bateria e USB-C (carga + dados)
+
+| Ligação | Pino no ESP32-S3 |
+| :--- | :--- |
+| **USB-C D−** | GPIO 19 (USB nativa, fixo) |
+| **USB-C D+** | GPIO 20 (USB nativa, fixo) |
+| **USB-C VBUS (5 V)** → divisor 100 kΩ / 100 kΩ | GPIO 2 (HIGH = cabo ligado) |
+| **Bateria (+)** → divisor 100 kΩ / 100 kΩ | GPIO 1 (ADC: lê metade da tensão) |
+| **USB-C CC1 e CC2** | 5,1 kΩ cada para o GND (sem isso, carregador USB-C não libera os 5 V) |
+| **USB-C VBUS** | entrada do carregador da bateria |
+
+> **Carregador:** o TP4056 carrega, mas o player não roda direito ligado na carga ao mesmo tempo. Um CI com caminho de energia (power-path, ex.: IP5306 ou BQ24074) deixa tocar música com o cabo ligado.
+>
+> **Proteção:** use uma bateria com placa de proteção (corta em ~3 V) e, de preferência, um ESD nas linhas de dados (ex.: USBLC6-2).
+>
+> **Na DevKitC de testes:** a porta "USB" da placa já é a USB nativa (GPIO 19/20), então o Modo USB funciona nela. Sem os divisores nos GPIO 1 e 2, a bateria aparece como 0% e o cabo como desligado.
+
+---
+
 ## 📌 GPIOs livres
 
-1, 2, 4, 38, 47 e 48 (o 48 é o LED RGB da DevKitC). Evite 0, 3, 45 e 46 (pinos de boot) e 19/20 (USB).
+4, 38, 47 e 48 (o 48 é o LED RGB da DevKitC). Evite 0, 3, 45 e 46 (pinos de boot).

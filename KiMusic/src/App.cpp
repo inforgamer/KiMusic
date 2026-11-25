@@ -23,6 +23,42 @@ void App::begin()
     nextButton.begin();
     volumeButton.begin();
     positionButton.begin();
+
+    // Prioridade acima do loop (1): le os botoes no horario mesmo com a tela ocupada.
+    xTaskCreatePinnedToCore(inputTask, "input", 3072, this, 2, nullptr, 1);
+}
+
+void App::inputTask(void *self)
+{
+    for (;;) {
+        static_cast<App *>(self)->sampleButtons();
+        vTaskDelay(pdMS_TO_TICKS(5));
+    }
+}
+
+void App::sampleButtons()
+{
+    ButtonEvent center = centerButton.poll();
+    bool previous = previousButton.clicked();
+    bool next     = nextButton.clicked();
+    bool volume   = volumeButton.clicked();
+    bool position = positionButton.clicked();
+
+    portENTER_CRITICAL(&inputLock);
+    if (center != ButtonEvent::None) pending.center = center;
+    pending.previous |= previous;
+    pending.next     |= next;
+    pending.volume   |= volume;
+    pending.position |= position;
+    portEXIT_CRITICAL(&inputLock);
+}
+
+void App::discardInput()
+{
+    portENTER_CRITICAL(&inputLock);
+    pending = Input();
+    portEXIT_CRITICAL(&inputLock);
+    encoder.readRotate();
 }
 
 void App::poll(uint32_t nowMs)
@@ -45,13 +81,11 @@ void App::poll(uint32_t nowMs)
 
 App::Input App::readInput()
 {
-    Input in;
+    portENTER_CRITICAL(&inputLock);
+    Input in = pending;
+    pending = Input();
+    portEXIT_CRITICAL(&inputLock);
     in.rotation = encoder.readRotate();
-    in.center   = centerButton.poll();
-    in.previous = previousButton.clicked();
-    in.next     = nextButton.clicked();
-    in.volume   = volumeButton.clicked();
-    in.position = positionButton.clicked();
     return in;
 }
 
@@ -61,20 +95,16 @@ App::Input App::readInput()
 
 void App::handleMenu(const Input &in)
 {
-    if (in.rotation != 0) {
-        menu.rotate(in.rotation);
-    }
-
+    // O giro do encoder nao mexe no menu: so os botoes (Vol sobe, Pos desce,
+    // Prev volta, Next/central escolhe).
     if (in.center == ButtonEvent::DoubleClick) {
         menu.close();
-    } else if (in.center == ButtonEvent::Click) {
-        menu.select();
+        return;
     }
-
-    // Joystick: Vol sobe, Pos desce, Prev volta. Next nao faz nada no menu.
     if (in.volume)   menu.up();
     if (in.position) menu.down();
     if (in.previous) menu.back();
+    if (in.center == ButtonEvent::Click || in.next) menu.select();
 }
 
 // -----------------------------------------------------------------------------
